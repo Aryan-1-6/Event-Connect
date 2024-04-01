@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Create Event - Your App Name{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Create Event</h2>
+    <form method="POST" action="{{ url_for('create_event') }}">
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" class="form-control" id="title" name="title" required>
+        </div>
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="5" required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="event_date">Event Date</label>
+            <input type="datetime-local" class="form-control" id="event_date" name="event_date" required>
+        </div>
+        <div class="form-group">
+            <label for="topic">Topic</label>
+            <select class="form-control custom-dropdown" id="topic" name="topic" required>                
+                <option value="music">Music</option>
+                <option value="business">Business & Professional</option>
+                <option value="food_drink">Food & Drink</option>
+                <option value="community_culture">Community & Culture</option>
+                <option value="performing_visual_arts">Performing & Visual Arts</option>
+                <option value="film_media_entertainment">Film, Media & Entertainment</option>
+                <option value="sports_fitness">Sports & Fitness</option>
+                <option value="health_wellness">Health & Wellness</option>
+                <option value="science_technology">Science & Technology</option>
+                <option value="travel_outdoor">Travel & Outdoor</option>
+                <option value="charity_causes">Charity & Causes</option>
+                <option value="religion_spirituality">Religion & Spirituality</option>
+                <option value="family_education">Family & Education</option>
+                <option value="seasonal_holiday">Seasonal & Holiday</option>
+                <option value="government_politics">Government & Politics</option>
+                <option value="fashion_beauty">Fashion & Beauty</option>
+                <option value="home_lifestyle">Home & Lifestyle</option>
+                <option value="auto_boat_air">Auto, Boat & Air</option>
+                <option value="hobbies_special_interest">Hobbies & Special Interest</option>
+            </select>
+        </div>
+        
+
+        <div class="form-group">
+            <label for="package_id">Packages</label>
+            <!-- You might want to replace the input field with a dropdown menu to select a package -->
+        </div> 
+        <div class="form-group">
+            <label for="event_type">Event Type</label>
+            <select class="form-control" id="event_type" name="event_type" required>
+                <option value="conference">Conference</option>
+                <option value="seminar">Seminar</option>
+                <option value="workshop">Workshop</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Create Event</button>
+        <button type="submit" href="/create_packages"class="btn btn-primary">Create Package</button>
+    </form>
+</div>
+
+{% endblock %}
+
+

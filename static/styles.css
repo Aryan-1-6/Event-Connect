@@ -1,0 +1,5 @@
+.custom-dropdown {
+    height: 150px; /* Set the height of the dropdown */
+    overflow-y: auto; /* Enable vertical scrolling */
+    font-size: 14px; /* Adjust the font size */
+}

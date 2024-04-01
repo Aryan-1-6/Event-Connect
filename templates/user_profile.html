@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile - Your App Name{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-4">User Profile</h1>
+        {% if checkloggedin == True %}
+        <form method="POST" action="/logout" class="mt-3">
+            <button type="submit" class="btn btn-danger btn-logout">
+                Logout
+            </button>
+        </form>
+        {% else %}
+        <a href="/login" class="btn btn-success">Login</a>
+        {% endif %}
+    </div>
+
+    <div class="user-profile">
+        <div class="row align-items-center mb-4">
+            <div class="col-md-4 text-center">
+                {% if (posts_df['profile_pic'].values)[0] is not none %}
+                <img src="../{{ (posts_df['profile_pic'].values)[0].decode('utf-8').replace('\\','/') }}" class="img-fluid rounded-circle profile-image" alt="Profile Picture">
+                {% else %}
+                <img src="../static/dummy-profile.png" class="img-fluid rounded-circle profile-image" alt="Default Profile Picture">
+                {% endif %}
+            </div>
+            <div class="col-md-8">
+                <h2>{{ posts_df['Name'][0] }}</h2>
+                <p>Email: {{ posts_df['Email'][0] }}</p>
+                {% if user_org is not none %}
+                    <p>Organization: <a href="{{ url_for('organization_info', org_id=temp) }}">{{ user_org }}</a></p>
+                {% else %}
+                    <p>No organization information available.</p>
+                {% endif %}
+            </div>
+        </div>
+        <hr class="my-4"> <!-- Horizontal rule for separation -->
+    </div>
+
+    <div class="user-previous-posts mt-4">
+        <h3 class="mb-3">Previous Posts</h3>
+        {% if user_post_df is not none %}
+            {% for index, post in user_post_df.iterrows() %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    {{ post["Topic"] }}:{{ post["Type"] }}
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ post["Title"] }}</h5>
+                    <p class="card-text">{{ post["Description"] }}</p>
+                    <span>Status: {{ post["Status"] }}</span>
+                    <br>
+                    <div class="d-flex align-items-center justify-content-between mt-3">
+                        <div class="d-flex">
+                        </div>
+                        <a href="/view_post/{{ post['EventID'] }}" class="btn btn-primary btn-sm">View Post</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No previous posts available.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

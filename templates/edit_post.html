@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Post - Your App Name{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Edit Post</h2>
+    <form method="POST" id="editPostForm">
+        <div class="form-group">
+            <label for="editTitle">Title</label>
+            <input type="text" class="form-control" id="editTitle" name="editTitle" value="{{ post['Title'] }}">
+        </div>
+        <div class="form-group">
+            <label for="editDescription">Description</label>
+            <textarea class="form-control" id="editDescription" name="editDescription" rows="3">{{ post['Description'] }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="editStatus">Status</label>
+            <input type="text" class="form-control" id="editStatus" name="editStatus" value="{{ post['Status'] }}">
+        </div>
+        <div class="form-group">
+            <label for="topic">Topic</label>
+            <select class="form-control" id="editTopic" name="editTopic" required>
+                <option value="environment">Environment</option>
+                <option value="social">Social</option>
+                <option value="governance">Governance</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="topic">Type</label>
+            <select class="form-control" id="editType" name="editType" required>
+                <option value="issue">Issue</option>
+                <option value="project">Project</option>
+            </select>
+        </div>
+        <input type="hidden" id="postID" name="postID" value="{{ post['PostID'] }}">        
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        
+    </form>
+</div>
+{% endblock %}

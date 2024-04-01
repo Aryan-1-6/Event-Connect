@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}View Post{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="display-4 mb-5">{{ post['Title'] }}</h1>
+
+    <div class="d-flex flex-wrap">
+        <div class="card mr-3" style="width: 50%;">
+            <img class="card-img-top" src="../static/dummy.jpg" alt="Card image cap">
+            <div class="card-body">
+                <h5 class="card-title">{{ post['Title'] }}</h5>
+                <p class="card-text"> <b>Topic:</b> {{ post['Topic'] }}</p>
+                <p class="card-text">{{ post['Description'] }}</p>
+                <p class="card-text">Posted by: {{ post['Name'] }}</p>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

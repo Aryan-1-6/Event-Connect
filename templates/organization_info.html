@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Organization Info - Your App Name{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="row mt-3 card-deck">
+        {% if other_organizations is not none %}
+            {% for index, org in other_organizations.iterrows() %}
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>{{ org["Name"] }}</h5>
+                        </div>
+                        <img src="../static/org_logos/{{ org['Name'] }}.jpg" alt="Org Logo" class="card-img-top fixed-size-image">
+                        <div class="card-body" style="height: 200px;"> <!-- Set a fixed height for the card body -->
+                            <p class="card-text">Description: {{ org['Description'] }}</p>
+                            <p class="card-text">Contact Information: {{ org['ContactInformation'] }}</p>
+                            <p class="card-text">Location: {{ org['Location'] }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col">
+                <p>No organization related to the user.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // JavaScript to scroll to the specific organization card
+        window.onload = function () {
+            var orgId = "{{ org_id }}"; // Make sure it's a string, enclosed in double quotes
+            console.log(orgId);
+            if (orgId) {
+                var orgElement = document.getElementById("org-" + orgId);
+                if (orgElement) {
+                    orgElement.scrollIntoView();
+                }
+            }
+        };
+    </script>
+</div>
+{% endblock %}
