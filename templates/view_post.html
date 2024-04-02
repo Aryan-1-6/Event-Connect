@@ -4,18 +4,93 @@
 
 {% block content %}
 <div class="container">
-    <h1 class="display-4 mb-5">{{ post['Title'] }}</h1>
+    <div class="row">
+        <div class="col-md-8">
+            <h1 class="display-4 mb-5">{{ post['Title'] }}</h1>
 
-    <div class="d-flex flex-wrap">
-        <div class="card mr-3" style="width: 50%;">
-            <img class="card-img-top" src="../static/dummy.jpg" alt="Card image cap">
-            <div class="card-body">
-                <h5 class="card-title">{{ post['Title'] }}</h5>
-                <p class="card-text"> <b>Topic:</b> {{ post['Topic'] }}</p>
-                <p class="card-text">{{ post['Description'] }}</p>
-                <p class="card-text">Posted by: {{ post['Name'] }}</p>
+            <div class="card mb-3">
+                <img class="card-img-top" src="../static/dummy.jpg" alt="Event Image">
+                <div class="card-body">
+                    <h5 class="card-title">{{ post['Title'] }}</h5>
+                    <p class="card-text"><strong>Topic:</strong> {{ post['Topic'] }}</p>
+                    <p class="card-text"><strong>Event Venue:</strong> {{ post['Location'] }}</p>
+                    <p class="card-text"><strong>Guests/Celebrities:</strong> {{ post['popularity_factor'] }}</p>
+                    <p class="card-text"><strong>Description:</strong> {{ post['Description'] }}</p>
+                    <p class="card-text"><strong>Estimated Attendees:</strong> {{ post['footfall'] }}</p>
+                    <p class="card-text"><strong>Posted by:</strong> {{ post['Name'] }}</p>
+                    
+                </div>
             </div>
+            
+            <!-- Button to trigger analytics sidebar -->
+            <button class="btn btn-primary btn-lg" id="openSidebarBtn">Analyze Event</button>
+        </div>
+        <div class="col-md-4">
+            <!-- Add sidebar content here if needed -->
         </div>
     </div>
+</div>
+
+<!-- Sidebar for analytics -->
+<div id="analyticsSidebar" class="sidebar">
+    <!-- Close button for the sidebar -->
+    <button class="close-btn" onclick="closeSidebar()">✖</button>
+    <h2 class="sidebar-title text-center">Analytics</h2> <!-- Updated class to align center -->
+    <!-- Add analytics content here -->
+</div>  
+
+<!-- Add CSS here -->
+<style>
+    /* Sidebar styles */
+    .sidebar {
+        height: 100%;
+        width: 600px; /* Adjust the width as needed */
+        position: fixed;
+        z-index: 1;
+        top: 70px;
+        bottom: 1000px;
+        right: -600px; /* Initially hidden */
+        background-color: #fcfcf9;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1); /* Add shadow */
+        overflow-x: hidden;
+        transition: right 0.5s ease;
+        padding-top: 60px;
+    }
+
+    .sidebar-title {
+        font-size: 24px;
+        color: #333; /* Adjust text color */
+        margin-left: 20px; /* Add some margin */
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #666; /* Adjust close button color */
+        cursor: pointer;
+    }
+
+    /* Other styles */
+</style>
+
+<!-- Add JavaScript here -->
+<script>
+    // Open sidebar function
+    function openSidebar() {
+        document.getElementById("analyticsSidebar").style.right = "0";
+    }
+
+    // Close sidebar function
+    function closeSidebar() {
+        document.getElementById("analyticsSidebar").style.right = "-600px";
+    }
+
+    // Event listener for open sidebar button
+    document.getElementById("openSidebarBtn").addEventListener("click", openSidebar);
+</script>
 
 {% endblock %}

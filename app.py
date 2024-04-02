@@ -94,6 +94,9 @@ def create_new_event(form_data, user_id):
     organizer_id = user_id  # Event organizer is the user creating the event
     package_id = form_data.get("package_id")  # Assuming package_id is part of form data
     event_type = form_data.get("event_type")    
+    location = form_data.get("location")
+    footfall = form_data.get("footfall")
+    popularity_factor = form_data.get("popularity_factor")
 
     # Check if the user is an event organizer
     query = f"SELECT Role FROM User WHERE UserID={user_id} AND Role='Organiser'"
@@ -102,8 +105,8 @@ def create_new_event(form_data, user_id):
     if not result:
         return "Only event organizers can create events."
 
-    values = (title, description, event_date, created_date, topic, organizer_id, package_id, event_type)
-    insert_query = "INSERT INTO Event (Title, Description, EventDate, CreatedAtDate, Topic, OrganizerID, PackageID, EventType) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+    values = (title, description, event_date, created_date, topic, organizer_id, package_id, event_type, location, footfall, popularity_factor)
+    insert_query = "INSERT INTO Event (Title, Description, EventDate, CreatedAtDate, Topic, OrganizerID, PackageID, EventType, Location, footfall, popularity_factor) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     cursor.execute(insert_query, values)
     cnx.commit()
 
@@ -171,7 +174,7 @@ def get_best_matching_titles(search_query):
 
 #----
 def fetch_post_from_database(post_id):
-    query = "SELECT Event.EventID, Event.Title, Event.Description, Event.EventDate ,Event.CreatedAtDate, Event.Topic, User.Name FROM Event INNER JOIN User ON Event.OrganizerID = User.UserID WHERE Event.EventID = %s;"
+    query = "SELECT Event.EventID, Event.Title, Event.Location, Event.footfall, Event.popularity_factor, Event.Description, Event.EventDate ,Event.CreatedAtDate, Event.Topic, User.Name FROM Event INNER JOIN User ON Event.OrganizerID = User.UserID WHERE Event.EventID = %s;"
     cursor.execute(query, (post_id,))
     post_data = cursor.fetchone()
 
@@ -179,11 +182,14 @@ def fetch_post_from_database(post_id):
         post = {
             'EventID': post_data[0],
             'Title': post_data[1],
-            'Description': post_data[2],
-            'EventDate': post_data[3],
-            'CreatedAtDate': post_data[4],
-            'Topic': post_data[5],
-            'Name': post_data[6],
+            'Location': post_data[2],
+            'footfall': post_data[3],
+            'popularity_factor': post_data[4],
+            'Description': post_data[5],
+            'EventDate': post_data[6],
+            'CreatedAtDate': post_data[7],
+            'Topic': post_data[8],
+            'Name': post_data[9],
         }
 
         return post
@@ -302,8 +308,7 @@ def get_ranked_posts(ranked_ids):
         query = f"SELECT Event.*,Name FROM Event join User ON Event.OrganizerID=User.UserID WHERE EventID={event_id};"
         cursor.execute(query)
         result = cursor.fetchall()
-        print(result)
-        posts_df=pd.DataFrame(result,columns=["EventID","Title","Description","EventDate","CreatedAtDate","Status","Topic","OrganizerID","PackageID","EventType","PostedBy"])
+        posts_df=pd.DataFrame(result,columns=["EventID","Title", "Location", "footfall", "popularity_factor","Description","EventDate","CreatedAtDate","Status","Topic","OrganizerID","PackageID","EventType","PostedBy"])
         dfs.append(posts_df.head(10))    
     result_df=pd.concat(dfs,axis=0)
     return result_df
@@ -375,7 +380,18 @@ def home():
         posts_df=get_ranked_posts(ranked_ids)
     else:
         posts_df = None
-    return render_template("home.html",posts_df=posts_df,checkloggedin=checkloggedin)
+
+
+    user_id = session.get("user_id")
+
+    query = f"SELECT role FROM User WHERE UserID = {user_id};"
+    cursor.execute(query)
+    role = cursor.fetchone()[0]
+    print(role)
+    if role == "Sponsor":
+        return render_template("sponsor_home.html", posts_df=posts_df, checkloggedin=checkloggedin)
+    else:
+        return render_template("home.html", posts_df=posts_df, checkloggedin=checkloggedin)
 
 @app.route("/user_profile/<int:user_di>", methods=["GET", "POST"])
 def user_profile(user_di):
@@ -391,7 +407,7 @@ def user_profile(user_di):
         posts_df = pd.DataFrame(user_id, columns=["UserID","Name","Email","Role","Password","OrganizationID","profile_pic"])
         cursor.execute(query2)
         user_post = cursor.fetchall()
-        user_post_df = pd.DataFrame(user_post, columns=["EventID", "Title", "Description", "EventDate", "CreatedAtDate", "Status", "Topic", "OrganizerID", "PackageID", "EventType"])
+        user_post_df = pd.DataFrame(user_post, columns=["EventID", "Title", "Location","footfall","popularity_factor","Description", "EventDate", "CreatedAtDate", "Status", "Topic", "OrganizerID", "PackageID", "EventType"])
         temp = posts_df["OrganizationID"][0]
         # print(temp)
         if(temp is not None):

@@ -39,6 +39,9 @@ CREATE TABLE User (
 CREATE TABLE Event (
     EventID INT AUTO_INCREMENT PRIMARY KEY,
     Title VARCHAR(255) NOT NULL,
+    Location VARCHAR(255) NOT NULL,
+    footfall INT NOT NULL,
+	popularity_factor TEXT,
     Description TEXT,
     EventDate TIMESTAMP,
     CreatedAtDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

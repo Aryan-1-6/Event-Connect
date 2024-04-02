@@ -16,129 +16,185 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         body {
-            background-color: #f5f0e3;
-        }
-    
-        .container {
-            background-color: #ffffff;
-            border-radius: 10px;
-            padding: 20px;
-        }
-    
-        .card {
-            border: 1px solid #d3c8e8;
-            margin-bottom: 20px;
-        }
-    
-        .card-header {
-            background-color: #6b3b85;
-            color: #ffffff;
-        }
-        
-        .btn-success {
-            background-color: #6b3b85;
-            border-color: #6b3b85;
-            color: #ffffff;
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-    
-        .btn-success:hover {
-            background-color: #512f69;
-            border-color: #512f69;
-        }
-    
-        .btn-danger {
-            background-color: #ff5c5c;
-            border-color: #ff5c5c;
-            color: #ffffff;
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-    
-        .btn-danger:hover {
-            background-color: #e54949;
-            border-color: #e54949;
-        }
-    
-        .btn-primary {
-            background-color: #6b3b85;
-            border-color: #6b3b85;
-            color: #ffffff;
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-    
-        .btn-primary:hover {
-            background-color: #512f69;
-            border-color: #512f69;
-        }
-    
-        .btn {
-            color: #ffffff;
-        }
-        
-        .vote-span {
-            margin-right: 10px;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            padding: 0;
         }
 
+        nav {
+            background-color: #343a40;
+            color: #fff;
+            padding: 15px 0;
+            margin-right: 20px;
+        }
+
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 1.2rem;
+            transition: color 0.3s ease-in-out;
+        }
+
+        nav a:hover {
+            color: #17a2b8;
+        }
+
+        .container {
+            margin-top: 50px;
+        }
+
+        footer {
+            background-color: #343a40;
+            color: #fff;
+            padding: 15px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+        }
+
+        .main_container {
+            margin-bottom: 70px;
+            /* Adjust this value to accommodate the footer height */
+        }
+
+        /* Side Navigation Menu */
+        .sidenav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: #343a40;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+
+        /* Close button */
+        .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+            color: #fff;
+        }
+
+        /* Links */
+        .sidenav a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+
+        /* Links on mouse-over */
+        .sidenav a:hover {
+            color: #f1f1f1;
+        }
+
+        /* Close button on hover */
+        .closebtn:hover {
+            color: #f1f1f1;
+        }
+
+        /* Toggle button */
+        #toggleBtn {
+            position: fixed;
+            top: 12px;
+            left: 20px;
+            z-index: 2;
+            font-size: 24px;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        /* Toggle button on hover */
+        #toggleBtn:hover {
+            color: #f1f1f1;
+        }
     </style>
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Event-Connect</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item active">
-                    <a class="nav-link" href="/home">Home <span class="sr-only">(current)</span></a>
-                </li>
-                <li class="nav-item active">
-                    <a class="nav-link" href="/my_post">My Events <span class="sr-only">(current)</span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/create_event">Add Event <span class="sr-only">(current)</span></a>
-                </li>
-            </ul>
-
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            
+            <a class="navbar-brand mr-auto" href="#">Event Connect</a>
+            <button class="navbar-toggler" type="button" onclick="openNav()">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarSupportedContent">
+                <ul class="navbar-nav">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="/home">Home <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="/my_post">My Events <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/create_event">Create Event</a>
+                    </li>
+                    <!-- Add logout link -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="logout()">Logout</a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
-    <div class="messages">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <ul class="messages">
-            {% for category, message in messages %}
-            <li class="alert alert-{{ category }}">{{ message }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-        {% endwith %}
+    <div id="toggleBtn">&#9776;</div>
+    <div id="mySidenav" class="sidenav">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <!-- Content for the side navigation menu goes here -->
+        <!-- You can provide your sliding window contents here -->
     </div>
     <div class="main_container mt-3" style="max-width:100vw; overflow:hidden">
         {% block content %}{% endblock %}
     </div>
 
     <footer class="footer text-center py-3">
-        <small>esg-consensus &copy; 2023</small>
+        <small>event-connect &copy; 2023</small>
     </footer>
 
-
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
-        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
-        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
-        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
-        crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
-        AOS.init();
+        function openNav() {
+            document.getElementById("mySidenav").style.width = "250px"; // Adjust the width of the side navigation menu
+        }
+
+        function closeNav() {
+            document.getElementById("mySidenav").style.width = "0";
+        }
+
+        function logout() {
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/logout';
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Toggle button event listener
+        document.getElementById("toggleBtn").addEventListener("click", function () {
+            if (document.getElementById("mySidenav").style.width === "250px") {
+                closeNav();
+            } else {
+                openNav();
+            }
+        });
     </script>
 </body>
 

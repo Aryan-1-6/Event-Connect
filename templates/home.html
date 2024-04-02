@@ -4,59 +4,96 @@
 
 {% block content %}
 <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="display-4">Home</h1>
-        {% if checkloggedin == True %}
-        <form method="POST" action="/logout" class="mt-3">
-            <button type="submit" class="btn btn-danger btn-logout">
-                Logout
-            </button>
-        </form>
-        {% else %}
-        <a href="/login" class="btn btn-success">Login</a>
-        {% endif %}
-    </div>
-
-    <!-- Add the search bar below this div -->
-    <div style="width:100%; text-align:center; display: flex;  justify-content: center;margin-bottom:50px">
-        <form method="post" class="form-inline my-2 my-lg-0">
-            <input class="form-control mr-sm-2 my-4 " style="width: 500px;" type="text" name="search_query"
-                placeholder="Search" value="{{ search_query }}" />
-            <button class="btn btn-success" type="submit">
-                Search
-            </button>
-        </form>
-    </div>
-
-    {% if posts_df is not none %}
-    <div class="posts">
-        <ul>
-            {% for index, post in posts_df.iterrows() %}
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="jumbotron">
+                <h1 class="display-4">Welcome to Event Connect</h1>
+                <p class="lead">Discover and organize amazing events effortlessly.</p>
+                <hr class="my-4">
+                <p>Join our community of event organizers and make your events unforgettable!</p>
+                <a class="btn btn-primary btn-lg" href="/create_event" role="button">Get Started</a>
+            </div>
+            <!-- Search form -->
+            <form method="post" class="form-inline my-2 my-lg-0 mb-4">
+                <input class="form-control mr-sm-2" type="text" name="search_query" placeholder="Search" value="{{ search_query }}">
+                <button class="btn btn-primary" type="submit">Search</button>
+            </form>
+            
+            <!-- Subtitle for Event Boxes -->
+            <h2 class="display-4 mt-5 ml-2 mb-3" style="font-size: 50px;">Latest Events</h2>
+            
+            <!-- Main content section -->
+            {% if posts_df is not none %}
+            <div class="posts">
+                <ul class="list-unstyled d-flex flex-wrap">
+                    {% for index, post in posts_df.iterrows() %}
+                    <div class="card mb-4 elegant-card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ post["Title"] }}</h5>
+                            <p class="card-text"><strong>Posted By:</strong> <a href="{{ url_for('user_profile', user_di=post['OrganizerID']) }}">{{ post["PostedBy"] }}</a></p>
+                            <p class="card-text">{{ post["Description"] }}</p>
+                            <p class="card-text"><strong>Status:</strong> {{ post["Status"] }}</p>
+                        </div>
+                        <div class="card-footer d-flex justify-content-end">
+                            <a href="/view_post/{{ post['EventID'] }}" class="btn btn-primary btn-sm">View Post</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% else %}
+            <p>No events available.</p>
+            {% endif %}
+        </div>
+        <div class="col-lg-4">
+            <!-- Sidebar for blog links -->
             <div class="card">
                 <div class="card-header">
-                    {{ post["Topic"] }}:{{ post["Type"] }}
+                    <h3 class="card-title">Useful Blogs</h3>
                 </div>
                 <div class="card-body">
-                    <h5 class="card-title">{{ post["Title"] }}</h5>
-                    <span>Posted By: <a href="{{ url_for('user_profile', user_di=post['OrganizerID']) }}">{{ post["PostedBy"] }}</a></span>
-                    
-                    
-                    
-                    <p class="card-text">{{ post["Description"] }}</p>
-                    <span>Status: {{ post["Status"] }}</span>
-                    <br>
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div class="d-flex">        
-                        </div>
-                        <a href="/view_post/{{ post['EventID'] }}" class="btn btn-primary btn-sm">View Post</a>
-                    </div>
+                    <ul class="list-unstyled">
+                        <li><a href="https://www.socialtables.com/blog/event-planning/how-to-get-sponsors-for-event/">How to Approach Sponsors</a></li>
+                        <li><a href="https://www.socialtables.com/blog/event-planning/timesaving-tips-tricks-secrets/">Event Planning Tips</a></li>
+                        <li><a href="https://www.cvent.com/en/blog/events/event-marketing-guide">Effective Marketing Strategies</a></li>
+                        <!-- Add more blog links as needed -->
+                    </ul>
                 </div>
             </div>
-            {% endfor %}
-        </ul>
+        </div>
     </div>
-    {% else %}
-    <p>No posts available.</p>
-    {% endif %}
 </div>
+
+<!-- Add CSS here -->
+<style>
+.elegant-card {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease-in-out;
+    margin-bottom: 20px;
+    margin-right: 20px;
+    margin-top: 20px;
+
+}
+
+.elegant-card:hover {
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.card-title {
+    color: #333;
+}
+
+.card-text {
+    color: #666;
+}
+
+.card-footer {
+    background-color: #f8f9fa;
+}
+</style>
+    
+
 {% endblock %}

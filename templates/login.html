@@ -4,18 +4,30 @@
 
 {% block content %}
 <div class="container">
-    <h2>Login</h2>
-    <form method="POST">
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" class="form-control" id="email" name="email" required>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Welcome Back!</h2>
+                    <!-- Adjust the width and height of the image using inline styling -->
+                    <img src="/static/user-interface.png" alt="Login Icon" class="img-fluid mx-auto d-block mb-4" style="width: 100px; height: auto;">
+                    <form method="POST">
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Login</button>
+                    </form>
+                </div>
+                <div class="card-footer text-center bg-light">
+                    <p class="mb-0">Don't have an account? <a href="/" class="text-decoration-none">Sign up today!</a></p>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" class="form-control" id="password" name="password" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Login</button>
-    </form>
-    <a href="/">Don't have an account? Sign up today!</a>
+    </div>
 </div>
 {% endblock %}

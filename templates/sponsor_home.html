@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Sponsor Role{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="jumbotron">
+                <h1 class="display-4">Welcome to Event Connect</h1>
+                <p class="lead">Discover and connect with events in need of sponsorship.</p>
+                <hr class="my-4">
+                <p>Join our community and find opportunities to sponsor events.</p>
+                <!-- You can adjust the button link and text as needed -->
+                <a class="btn btn-primary btn-lg" href="#latest-events-section" role="button">Browse Events</a>            </div>
+        </div>
+        
+    </div>
+    <div class="row">
+        <!-- Filters Section -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    Filters
+                </div>
+                <div class="card-body">
+                    <!-- Filter form -->
+                    <form method="post">
+                        <div class="form-group">
+                            <label for="location">Location:</label>
+                            <input type="text" class="form-control" id="location" name="location">
+                        </div>
+                        <div class="form-group">
+                            <label for="eventType">Event Type:</label>
+                            <input type="text" class="form-control" id="eventType" name="eventType">
+                        </div>
+                        <div class="form-group">
+                            <label for="eventTopic">Event Topic:</label>
+                            <input type="text" class="form-control" id="eventTopic" name="eventTopic">
+                        </div>
+                        <div class="form-group">
+                            <label for="budgetFrom">Budget From:</label>
+                            <input type="number" class="form-control" id="budgetFrom" name="budgetFrom">
+                        </div>
+                        <div class="form-group">
+                            <label for="budgetTo">Budget To:</label>
+                            <input type="number" class="form-control" id="budgetTo" name="budgetTo">
+                        </div>
+                        <div class="form-group">
+                            <label for="attendeesFrom">Attendees From:</label>
+                            <input type="number" class="form-control" id="attendeesFrom" name="attendeesFrom">
+                        </div>
+                        <div class="form-group">
+                            <label for="attendeesTo">Attendees To:</label>
+                            <input type="number" class="form-control" id="attendeesTo" name="attendeesTo">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Event Boxes Section -->
+        <div class="col-lg-8">
+            <h2 id="latest-events-section" class="display-4 mb-5" style="font-size: 50px;">Latest Events</h2>
+
+            {% if posts_df is not none %}
+            <div class="posts">
+                <ul class="list-unstyled d-flex flex-wrap">
+                    {% for index, post in posts_df.iterrows() %}
+                    <li class="mb-3" style="width: 300px;">
+                        <div class="card elegant-card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ post["Title"] }}</h5>
+                                <span>Posted By: <a href="{{ url_for('user_profile', user_di=post['OrganizerID']) }}">{{ post["PostedBy"] }}</a></span>
+                                <p class="card-text">{{ post["Description"] }}</p>
+                                <span>Status: {{ post["Status"] }}</span>
+                            </div>
+                            <div class="card-footer d-flex justify-content-end">
+                                <a href="/view_post/{{ post['EventID'] }}" class="btn btn-primary btn-sm">View Post</a>
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% else %}
+            <p>No events available.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add CSS here -->
+<style>
+.elegant-card {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease-in-out;
+    margin-right: 20px; /* Add spacing between each box */
+}
+
+.elegant-card:hover {
+    box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.2);
+}
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('.btn-primary').addEventListener('click', function(event) {
+            event.preventDefault();
+            document.querySelector('#latest-events-section').scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+    </script>
+{% endblock %}
