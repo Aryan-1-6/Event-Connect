@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}View Package{% endblock %}
+
+{% block content %}
+<!-- Inside your view_package.html template -->
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h1 class="display-4 mb-5">{{ package['Title'] }}</h1>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ package['Name'] }}</h5>
+                    <p class="card-text"><strong>Description:</strong> {{ package['Description'] }}</p>
+                    <p class="card-text"><strong>Price From:</strong> {{ package['Price_from'] }}</p>
+                    <p class="card-text"><strong>Price To:</strong> {{ package['Price_to'] }}</p>
+
+                </div>
+            </div>
+    </div>
+</div>
+
+<style>
+    /* Sidebar styles */
+    .sidebar {
+        height: 100%;
+        width: 600px; /* Adjust the width as needed */
+        position: fixed;
+        z-index: 1;
+        top: 70px;
+        bottom: 1000px;
+        right: -600px; /* Initially hidden */
+        background-color: #fcfcf9;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1); /* Add shadow */
+        overflow-x: hidden;
+        transition: right 0.5s ease;
+        padding-top: 60px;
+    }
+
+    .sidebar-title {
+        font-size: 24px;
+        color: #333; /* Adjust text color */
+        margin-left: 20px; /* Add some margin */
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #666; /* Adjust close button color */
+        cursor: pointer;
+    }
+
+    /* Styles for packages */
+    .packages-container {
+        margin-top: 30px;
+    }
+
+    .packages-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .package-card {
+        width: calc(33.333% - 20px); /* Adjust the width as needed */
+    }
+
+    .card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        transition: transform 0.3s;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-body {
+        padding: 20px;
+    }
+
+    .card-title {
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+
+    .card-text {
+        margin-bottom: 15px;
+    }
+</style>
+
+<!-- Add JavaScript here -->
+<script>
+    // Open sidebar function
+    function openSidebar() {
+        document.getElementById("analyticsSidebar").style.right = "0";
+    }
+
+    // Close sidebar function
+    function closeSidebar() {
+        document.getElementById("analyticsSidebar").style.right = "-600px";
+    }
+
+    // Event listener for open sidebar button
+    document.getElementById("openSidebarBtn").addEventListener("click", openSidebar);
+</script>
+
+{% endblock %}

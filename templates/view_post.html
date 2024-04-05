@@ -13,12 +13,38 @@
                 <div class="card-body">
                     <h5 class="card-title">{{ post['Title'] }}</h5>
                     <p class="card-text"><strong>Topic:</strong> {{ post['Topic'] }}</p>
+                    <p class="card-text"><strong>Type:</strong> {{ post['Type'] }}</p>
                     <p class="card-text"><strong>Event Venue:</strong> {{ post['Location'] }}</p>
                     <p class="card-text"><strong>Guests/Celebrities:</strong> {{ post['popularity_factor'] }}</p>
                     <p class="card-text"><strong>Description:</strong> {{ post['Description'] }}</p>
                     <p class="card-text"><strong>Estimated Attendees:</strong> {{ post['footfall'] }}</p>
                     <p class="card-text"><strong>Posted by:</strong> {{ post['Name'] }}</p>
-                    
+                </div>
+            </div>
+            
+            <!-- Display packages information -->
+            <div class="packages-container">
+                <h5 class="text-primary">Packages:</h5>
+                <div class="packages-list">
+                    {% if packages %}
+                        {% for package in packages %}
+                            <div class="package-card mb-3 mt-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ package['Name'] }}</h6>
+                                        <p class="card-text"><strong>Price From:</strong> {{ package['Price_from'] }}</p>
+                                        <p class="card-text"><strong>Price To:</strong> {{ package['Price_to'] }}</p>
+                                        <p class="card-text">{{ package['Description'] }}</p>
+                                        <a href="{{ url_for('view_package', package=package) }}" class="btn btn-primary">View</a>
+                                        <a onclick="showInterest('{{ package['PackageID'] }}' , '{{ user_id }}')" class="btn btn-primary mt-2">Show Interest</a>
+                                        <meta name="csrf-token" content="{{ csrf_token }}">
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No packages available.</p>
+                    {% endif %}
                 </div>
             </div>
             
@@ -74,7 +100,44 @@
         cursor: pointer;
     }
 
-    /* Other styles */
+    /* Styles for packages */
+    .packages-container {
+        margin-top: 30px;
+    }
+
+    .packages-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .package-card {
+        width: calc(33.333% - 20px); /* Adjust the width as needed */
+    }
+
+    .card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        transition: transform 0.3s;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-body {
+        padding: 20px;
+    }
+
+    .card-title {
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+
+    .card-text {
+        margin-bottom: 15px;
+    }
 </style>
 
 <!-- Add JavaScript here -->
@@ -91,6 +154,53 @@
 
     // Event listener for open sidebar button
     document.getElementById("openSidebarBtn").addEventListener("click", openSidebar);
+
+    // Function to handle showing interest
+    function showInterest(packageId, sponsorId) {
+        // Prepare data to send in the AJAX request
+        const requestData = {
+            packageId: packageId,
+            sponsorId: sponsorId
+        };
+
+        // Send AJAX request to backend
+        fetch('/show_interest', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Notify the organizer
+                alert('Your interest has been sent to the organizer.');
+            } else {
+                alert('Failed to send interest. Please try again later.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again later.');
+        });
+    }
+
+    function getCSRFToken() {
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        if (metaTag) {
+            return metaTag.getAttribute('content');
+        } else {
+            console.error('CSRF meta tag not found');
+            return '';
+        }
+    }
 </script>
 
 {% endblock %}

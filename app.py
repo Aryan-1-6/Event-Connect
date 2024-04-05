@@ -1,6 +1,10 @@
-from flask import Flask, request, render_template, redirect, url_for, flash, session
+from flask import Flask, request, render_template, redirect, url_for, flash, session, jsonify
 from flask_moment import Moment
 from flask_bcrypt import Bcrypt
+from flask_socketio import SocketIO, emit, join_room
+from flask_login import current_user, login_required, LoginManager
+from flask_wtf.csrf import CSRFProtect, generate_csrf
+from multiprocessing import Process
 import mysql.connector
 import json
 import pandas as pd
@@ -30,6 +34,26 @@ app = Flask(__name__)
 bcrypt = Bcrypt(app)
 moment = Moment(app)
 app.secret_key = '1234567890'
+socketio = SocketIO(app)
+
+
+# login_manager = LoginManager()
+# login_manager.init_app(app)
+# csrf = CSRFProtect(app)
+
+
+# @login_manager.user_loader
+# def load_user(user_id):
+#     query = "SELECT * FROM User WHERE UserID = %s"
+#     cursor.execute(query, (user_id,))
+#     user_data = cursor.fetchone()
+#     if user_data:
+#         # Create a User object using UserMixin
+#         user = User()
+#         user.id = user_data['UserID']
+#         return user
+#     else:
+#         return None
 
 
 #----
@@ -92,7 +116,6 @@ def create_new_event(form_data, user_id):
     created_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Assuming you want to record the current date/time
     topic = form_data.get("topic")
     organizer_id = user_id  # Event organizer is the user creating the event
-    package_id = form_data.get("package_id")  # Assuming package_id is part of form data
     event_type = form_data.get("event_type")    
     location = form_data.get("location")
     footfall = form_data.get("footfall")
@@ -105,12 +128,13 @@ def create_new_event(form_data, user_id):
     if not result:
         return "Only event organizers can create events."
 
-    values = (title, description, event_date, created_date, topic, organizer_id, package_id, event_type, location, footfall, popularity_factor)
-    insert_query = "INSERT INTO Event (Title, Description, EventDate, CreatedAtDate, Topic, OrganizerID, PackageID, EventType, Location, footfall, popularity_factor) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    values = (title, description, event_date, created_date, topic, organizer_id, event_type, location, footfall, popularity_factor)
+    insert_query = "INSERT INTO Event (Title, Description, EventDate, CreatedAtDate, Topic, OrganizerID, EventType, Location, footfall, popularity_factor) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     cursor.execute(insert_query, values)
     cnx.commit()
 
-    return "Event created successfully."
+    event_id = cursor.lastrowid
+    return event_id
 
 
 @app.route("/create_event", methods=["GET", "POST"])
@@ -118,42 +142,44 @@ def create_event():
     if request.method == "POST" and "user_id" in session:
         form_data = request.form.to_dict()
         user_id = session["user_id"]
-        create_new_event(form_data,user_id)
-        return redirect(url_for("home"))
+        event_id = create_new_event(form_data,user_id)
+        return redirect(url_for("create_package", event_id=event_id))
     elif "user_id" not in session:
         flash("Please Login to add posts", "danger")
     return render_template("create_post.html")
 
 
-def create_new_package(form_data, user_id):
+def create_new_package(form_data, user_id, event_id):
     name = form_data.get("name")
     description = form_data.get("description")
     organizer_id = user_id  # Event organizer is the user creating the event
-    price = form_data.get("price")
-    
-    query = f"SELECT Role FROM User WHERE UserID={user_id} AND Role='Organiser'"
+    price_from = form_data.get("price_from")
+    price_to = form_data.get("price_to")
+
+    query = f"SELECT Role FROM User WHERE UserID={user_id}"
     cursor.execute(query)
     result = cursor.fetchone()
-    if not result:
+    role = "Organiser"
+    role = (role,)
+    if result != role:
         return "Only event organizers can create events."
-        
-    values = (name, description, price)
-    insert_query = "INSERT INTO Package (Name, Description, Price) VALUES (%s, %s, %s)"
+    values = (event_id, organizer_id, name, description, price_from, price_to)
+    insert_query = "INSERT INTO Package (EventID, OrganizerID, Name, Description, Price, Price_limit) VALUES (%s, %s, %s, %s, %s, %s)"
     cursor.execute(insert_query, values)
     cnx.commit()
 
     return "Package created successfully."
 
-@app.route("/create_packages", methods=["GET", "POST"])
-def create_package():
+@app.route("/create_packages/<int:event_id>", methods=["GET", "POST"])
+def create_package(event_id):
     if request.method == "POST" and "user_id" in session:
         form_data = request.form.to_dict()
         user_id = session["user_id"]
-        create_new_package(form_data,user_id)
-        return redirect(url_for("home"))
+        create_new_package(form_data,user_id,event_id)
+        return redirect(url_for("create_package", event_id=event_id))
     elif "user_id" not in session:
         flash("Please Login to add posts", "danger")
-    return render_template("create_package.html")
+    return render_template("create_package.html",event_id=event_id)
 
 
 #-----
@@ -174,7 +200,7 @@ def get_best_matching_titles(search_query):
 
 #----
 def fetch_post_from_database(post_id):
-    query = "SELECT Event.EventID, Event.Title, Event.Location, Event.footfall, Event.popularity_factor, Event.Description, Event.EventDate ,Event.CreatedAtDate, Event.Topic, User.Name FROM Event INNER JOIN User ON Event.OrganizerID = User.UserID WHERE Event.EventID = %s;"
+    query = "SELECT Event.EventID, Event.Title, Event.Location, Event.footfall, Event.popularity_factor, Event.Description, Event.EventDate ,Event.CreatedAtDate, Event.Topic, Event.EventType, User.Name FROM Event INNER JOIN User ON Event.OrganizerID = User.UserID WHERE Event.EventID = %s;"
     cursor.execute(query, (post_id,))
     post_data = cursor.fetchone()
 
@@ -189,23 +215,45 @@ def fetch_post_from_database(post_id):
             'EventDate': post_data[6],
             'CreatedAtDate': post_data[7],
             'Topic': post_data[8],
-            'Name': post_data[9],
+            'Type': post_data[9],
+            'Name': post_data[10],
         }
 
         return post
 
     return None
 
+def fetch_packages_from_database(event_id):
+    query = "SELECT Package.PackageID, Package.Name, Package.Price, Package.Price_limit, Package.Description FROM Package WHERE Package.EventID = %s;"
+    cursor.execute(query, (event_id,))
+    rows = cursor.fetchall()
+
+    packages = []
+    for row in rows:
+        package = {
+            'PackageID': row[0],
+            'Name': row[1],
+            'Price_from': row[2],
+            'Price_to': row[3],
+            'Description': row[4],
+        }
+        packages.append(package)
+    return packages
+
+
 #display selected event
-@app.route("/view_post/<int:event_id>", methods=["GET"])
+@app.route("/view_post/<int:event_id>", methods=["GET","POST"])
 def view_post(event_id):
     # Fetch the specific post from the database
     session['previous_route'] = request.url
     post = fetch_post_from_database(event_id)
+    packages = fetch_packages_from_database(event_id)
     if post is None:
         flash("Post not found", "danger")
         return redirect(url_for("home"))
-
+    if "user_id" in session:
+        user_id = session["user_id"]
+        print(user_id, " jeivjv")
     # Fetch comments for the post
     # comments = fetch_comments_for_post(post_id)
     # df=get_sentiment_analytics(post_id)
@@ -236,9 +284,51 @@ def view_post(event_id):
     # data2['positive'] = [int(x) for x in data2['positive']]
     # data2['negative'] = [int(x) for x in data2['negative']]
     # data2['neutral'] = [int(x) for x in data2['neutral']]
+    csrf_token=generate_csrf()
 
     # Render a template to view the post with comments
-    return render_template("view_post.html", post=post)
+    return render_template("view_post.html", post=post, packages=packages, csrf_token=csrf_token, user_id=user_id)
+
+
+
+@app.route("/view_package", methods=["GET"])
+def view_package():
+    # Fetch package details from the database based on the package_id
+    # package = fetch_package(package_id)
+    package = request.args.get("package", None)
+    package_str = package.strip('{}')
+
+    # Split the string into key-value pairs
+    pairs = package_str.split(', ')
+
+    # Initialize an empty dictionary to store the key-value pairs
+    package_dict = {}
+
+    # Iterate through the key-value pairs
+    for pair in pairs:
+        # Split each pair into key and value
+        key, value = pair.split(': ')
+        # Remove single quotes from keys and values
+        key = key.strip("'")
+        # Check if the value is numeric and convert it accordingly
+        if value.startswith("'") and value.endswith("'"):
+            value = value.strip("'")
+        if value.isdigit():
+            value = int(value)
+        elif value.startswith("Decimal('") and value.endswith("')"):
+            value = float(value.strip("Decimal('").rstrip("')"))
+        # Add key-value pair to the dictionary
+        package_dict[key] = value
+
+
+    package = package_dict
+    # for key, value in package.items():
+        # pack_dict[key] = value
+    # print(pack_dict)
+    if package is None:
+        flash("Package not found.", "danger")
+        return redirect(url_for("home"))  # Redirect to home page or any other appropriate page
+    return render_template("view_package.html", package=package)  
 
 #------
 # Login route
@@ -308,7 +398,7 @@ def get_ranked_posts(ranked_ids):
         query = f"SELECT Event.*,Name FROM Event join User ON Event.OrganizerID=User.UserID WHERE EventID={event_id};"
         cursor.execute(query)
         result = cursor.fetchall()
-        posts_df=pd.DataFrame(result,columns=["EventID","Title", "Location", "footfall", "popularity_factor","Description","EventDate","CreatedAtDate","Status","Topic","OrganizerID","PackageID","EventType","PostedBy"])
+        posts_df=pd.DataFrame(result,columns=["EventID","Title", "Location", "footfall", "popularity_factor","Description","EventDate","CreatedAtDate","Status","Topic","OrganizerID","EventType","PostedBy"])
         dfs.append(posts_df.head(10))    
     result_df=pd.concat(dfs,axis=0)
     return result_df
@@ -369,7 +459,6 @@ def rank_posts():
 def home():
     # posts_df=get_posts()
     ranked_ids=rank_posts()
-    print(ranked_ids)
     session['previous_route'] = request.url
     checkloggedin=("user_id" in session)
     search_query=""
@@ -387,11 +476,79 @@ def home():
     query = f"SELECT role FROM User WHERE UserID = {user_id};"
     cursor.execute(query)
     role = cursor.fetchone()[0]
-    print(role)
+
     if role == "Sponsor":
-        return render_template("sponsor_home.html", posts_df=posts_df, checkloggedin=checkloggedin)
+        response_list = get_responses(user_id)
+        return render_template("sponsor_home.html", posts_df=posts_df, response_list=response_list, checkloggedin=checkloggedin)
     else:
-        return render_template("home.html", posts_df=posts_df, checkloggedin=checkloggedin)
+        interest_list = pd.DataFrame(get_interests(user_id))
+        return render_template("home.html", posts_df=posts_df, interest_list=interest_list, checkloggedin=checkloggedin)
+
+
+def get_responses(user_id):
+    query = "SELECT User.Name, Interest.PackageID, Interest.interaction_date, Interest.accepted, Package.EventID, Interest.SponsorID FROM Interest INNER JOIN User ON Interest.OrganizerID = User.UserID INNER JOIN Package ON Package.PackageID = Interest.PackageID WHERE Interest.SponsorID=%s;"
+    cursor.execute(query, (user_id,))
+
+    response_list = []
+    for response in cursor.fetchall():
+        if(response[3] == 0):
+            continue
+        if(response[3] == -1):
+            val="Rejected"
+        else:
+            val="Accepted"
+        response_dict = {
+            "sponsor_name": response[0],
+            "package_id": response[1],
+            "interaction_date": pd.to_datetime(response[2]),
+            "accepted": val,
+            "event_id": response[4],
+            "sponsor_id": response[5]
+        }
+        response_list.append(response_dict)
+    print(response_list)
+    return response_list
+
+def get_interests(user_id):
+    query = "SELECT User.Name, Interest.PackageID, Interest.interaction_date, Interest.accepted, Package.EventID, Interest.SponsorID FROM Interest INNER JOIN User ON Interest.SponsorID = User.UserID INNER JOIN Package ON Package.PackageID = Interest.PackageID WHERE Interest.OrganizerID=%s;"
+    cursor.execute(query, (user_id,))
+
+    interest_list = []
+    for interest in cursor.fetchall():
+        if(interest[3]):
+            continue
+        interest_dict = {
+            "sponsor_name": interest[0],
+            "package_id": interest[1],
+            "interaction_date": pd.to_datetime(interest[2]),
+            "accepted": bool(interest[3]),
+            "event_id": interest[4],
+            "sponsor_id": interest[5]
+        }
+        interest_list.append(interest_dict)
+    print(interest_list)
+    return interest_list
+
+@app.route("/accept_request", methods=["POST"])
+def accept_interest():
+    print("mdmdls")
+    package_id = request.form.get("package_id")
+    if package_id != "":
+        query = "UPDATE Interest SET accepted=1 WHERE PackageID=%s;"
+        cursor.execute(query, (package_id,))
+        cnx.commit()
+        return jsonify({"success": True})
+    return jsonify({"success": False})
+
+@app.route("/reject_request", methods=["POST"])
+def reject_interest():
+    package_id = request.form.get("package_id")
+    if package_id != "":
+        query = "UPDATE Interest SET accepted=-1 WHERE PackageID=%s;"
+        cursor.execute(query, (package_id,))
+        cnx.commit()
+        return jsonify({"success": True})
+    return jsonify({"success": False})
 
 @app.route("/user_profile/<int:user_di>", methods=["GET", "POST"])
 def user_profile(user_di):
@@ -407,7 +564,7 @@ def user_profile(user_di):
         posts_df = pd.DataFrame(user_id, columns=["UserID","Name","Email","Role","Password","OrganizationID","profile_pic"])
         cursor.execute(query2)
         user_post = cursor.fetchall()
-        user_post_df = pd.DataFrame(user_post, columns=["EventID", "Title", "Location","footfall","popularity_factor","Description", "EventDate", "CreatedAtDate", "Status", "Topic", "OrganizerID", "PackageID", "EventType"])
+        user_post_df = pd.DataFrame(user_post, columns=["EventID", "Title", "Location","footfall","popularity_factor","Description", "EventDate", "CreatedAtDate", "Status", "Topic", "OrganizerID", "EventType"])
         temp = posts_df["OrganizationID"][0]
         # print(temp)
         if(temp is not None):
@@ -425,6 +582,224 @@ def user_profile(user_di):
     else:
         flash("Please log in to view your posts", "danger")
         return redirect(url_for("login"))
+
+@app.route("/my_post", methods=["GET", "POST"])
+def my_posts():
+    # Check if the user is logged in
+    if "user_id" in session:
+        user_id = session["user_id"]
+        # Fetch posts created by the logged-in user
+        query = f"SELECT * FROM Event WHERE OrganizerID = {user_id}"
+        cursor.execute(query)
+        user_posts = cursor.fetchall()
+        posts_df = pd.DataFrame(user_posts, columns=["EventID", "Title", "Location","footfall","popularity_factor","Description","EventDate", "CreatedAtDate", "Status", "Topic", "OrganizationID", "PackageID", "EventType"])
+        post_id = 1
+        checkloggedin = True
+        return render_template("my_post.html", posts_df=posts_df, post_id = post_id, checkloggedin=checkloggedin)
+    else:
+        flash("Please log in to view your posts", "danger")
+        return redirect(url_for("login"))
+
+
+@app.route("/delete_post/<int:post_id>", methods=["POST"])
+def delete_post(post_id):
+    if "user_id" in session:
+        user_id = session["user_id"]
+
+        # Check if the post with the given ID exists and belongs to the logged-in user
+        query = "SELECT OrganizerID FROM Event WHERE EventID = %s"
+        cursor.execute(query, (post_id,))
+        result = cursor.fetchone()
+
+        if result and result[0] == user_id:
+            # If the post exists and belongs to the user, delete it
+            delete_query = "DELETE FROM Event WHERE EventID = %s"
+            cursor.execute(delete_query, (post_id,))
+            cnx.commit()
+            flash("Event deleted successfully", "success")
+        else:
+            flash("You don't have permission to delete this event", "danger")
+    else:
+        flash("Please log in to delete events", "danger")
+
+    # Redirect back to the "My Posts" page
+    return redirect(url_for("my_posts"))
+
+
+def fetch_filtered_posts(location, eventType, eventTopic, footfall_to, footfall_from, budget_from, budget_to):
+    # Start building the SQL query
+    if budget_from == "" or budget_to == "":
+        query = "SELECT DISTINCT Event.EventID, Event.Title, Event.Location, Event.footfall, Event.popularity_factor, Event.Description, Event.EventDate, Event.CreatedAtDate, Event.Status, Event.Topic, Event.EventType, Event.OrganizerID,User.Name "\
+        "FROM Event INNER JOIN User ON Event.OrganizerID = User.UserID"
+    else:
+        query = """
+            SELECT DISTINCT 
+                Event.EventID, 
+                Event.Title, 
+                Event.Location, 
+                Event.footfall, 
+                Event.popularity_factor, 
+                Event.Description, 
+                Event.EventDate, 
+                Event.CreatedAtDate, 
+                Event.Status, 
+                Event.Topic, 
+                Event.EventType, 
+                Event.OrganizerID,
+                User.Name,
+                Package.Price,
+                Package.Price_limit 
+            FROM 
+                Event 
+            INNER JOIN 
+                User 
+            ON 
+                Event.OrganizerID = User.UserID
+            INNER JOIN
+                Package 
+            ON 
+                Package.EventId = Event.EventID
+            """
+
+    
+    a,b,c,d,e = 0,0,0,0,0
+    if location != "":
+        location = (location,)
+        a=1
+    if eventType != "":
+        eventType = (eventType,)
+        b=1
+    if eventTopic != "":
+        eventTopic = (eventTopic,)
+        c=1   
+    if footfall_to != "" and footfall_from != "":
+        footfall_to = (footfall_to,)
+        footfall_from = (footfall_from,) 
+        d=1   
+    if budget_from != "" and budget_to != "":
+        budget_from = (budget_from,)
+        budget_to = (budget_to,)
+        e=1
+
+    params = []
+    if a:
+        query += " AND Event.Location = %s"
+        params.append(location)
+    if b:
+        if a:
+            query += " AND Event.EventType = %s"
+        else:
+            query += " WHERE Event.EventType = %s"
+        params.append(eventType)
+    if c:
+        if a or b:
+            query += " AND Event.Topic = %s"
+        else:
+            query += " WHERE Event.Topic = %s"
+        params.append(eventTopic)
+    if d:
+        if a or b or c:
+            query += " AND Event.footfall >= %s AND Event.footfall <= %s"
+        else:
+            query += " WHERE Event.footfall >= %s AND Event.footfall <= %s"
+        params.append(footfall_from)
+        params.append(footfall_to)  
+    if e:
+        if a or b or c or d:
+            query += " AND Package.Price >= %s AND Package.Price_limit <= %s"
+        else:
+            query += " WHERE Package.Price >= %s AND Package.Price_limit <= %s"
+        params.append(budget_from)
+        params.append(budget_to)  
+ 
+    params_flat = tuple(item[0] for item in params)
+    cursor.execute(query, params_flat)
+
+    filtered_posts = []
+
+    for post_data in cursor.fetchall():
+        post = {
+            'EventID': post_data[0],
+            'Title': post_data[1],
+            'Location': post_data[2],
+            'footfall': post_data[3],
+            'popularity_factor': post_data[4],
+            'Description': post_data[5],
+            'EventDate': post_data[6],
+            'CreatedAtDate': post_data[7],
+            'Status': post_data[8],
+            'Topic': post_data[9],
+            'EventType': post_data[10],
+            'OrganizerID': post_data[11],
+            'Name': post_data[12]
+        }
+        filtered_posts.append(post)
+
+    return filtered_posts
+
+
+
+@app.route('/apply_filters', methods=['POST'])
+def apply_filters():
+    # Retrieve filter parameters from the form data
+    location = request.form.get('location')
+    eventType = request.form.get('eventType')
+    eventTopic = request.form.get('eventTopic')
+    budgetFrom = request.form.get('budgetFrom')
+    budgetTo = request.form.get('budgetTo')
+    attendeesFrom = request.form.get('attendeesFrom')
+    attendeesTo = request.form.get('attendeesTo')
+
+
+    posts_df = pd.DataFrame(fetch_filtered_posts(location, eventType, eventTopic,attendeesTo, attendeesFrom, budgetFrom, budgetTo))
+
+    return render_template('sponsor_home.html', posts_df=posts_df)
+
+def get_organizer_info(package_id):
+    # Your logic to fetch the organizer's information based on the package ID goes here
+    # For example, you might join the Packages table with the Users table to get the organizer's information
+    # Assuming you have a Packages table with an organizer_id column that references the Users table
+    query = "SELECT Package.OrganizerID FROM Package WHERE Package.PackageId = %s"
+    print(package_id," ccmmc")
+    package_id = tuple(package_id)
+    cursor.execute(query, (package_id))
+    post_data = cursor.fetchall()
+    if post_data != []:
+        return post_data[0]
+    else:
+        return None
+
+
+@app.route('/show_interest', methods=['POST'])
+def show_interest():
+    print('evwevedv')
+    package_id = request.json.get('packageId')
+    sponsor_id = request.json.get('sponsorId')
+    print(sponsor_id)
+    # Get the organizer's identifier associated with the package
+    organizer_identifier = get_organizer_info(package_id)
+
+    if organizer_identifier:
+        # Emit a WebSocket event to notify the organizer
+
+        # Fetch package details
+        organizer_id = str(organizer_identifier[0])
+        socketio.emit('interest_shown', {'packageId': package_id}, room=organizer_id)
+        interaction_type = "sponsor_approach"
+        accepted= 0
+        
+        query = "INSERT into Interest (SponsorID, OrganizerID, PackageID, interaction_type, accepted) VALUES (%s,%s,%s,%s,%s)"
+        values =  (sponsor_id, organizer_id, package_id, interaction_type, accepted)
+        print(values)
+        cursor.execute(query, values)
+        cnx.commit()
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'message': 'Organizer identifier not found.'}), 405
+
+
+
+
 
 @app.route("/organization_info/<int:org_id>", methods=["GET", "POST"])
 def organization_info(org_id):
@@ -445,7 +820,34 @@ def organization_info(org_id):
         flash("Please log in to view organization information", "danger")
         return redirect(url_for("login"))
 
-if __name__ == '__main__':
-    app.run(debug=True)
+def run_flask_app(host, port):
+    app.run(host=host, port=port)
+
+if __name__ == "__main__":
+    
+    # app.run(host='192.168.56.1') 
+    app.run(debug=True) 
+    
+    # IP and port for the first instance
+    # host1 = '127.0.0.1'  # Replace with your desired IP address
+    # port1 = 5000  # Replace with your desired port number
+
+    # # IP and port for the second instance
+    # host2 = '192.168.56.1'  # Replace with your desired IP address
+    # port2 = 5000  # Replace with your desired port number
+
+    # # Create two separate processes for running each instance
+    # process1 = Process(target=run_flask_app, args=(host1, port1))
+    # process2 = Process(target=run_flask_app, args=(host2, port2))
+
+    # # Start both processes
+    # process1.start()
+    # process2.start()
+    # # app.run(host=host2)
+    # # Wait for both processes to finish
+    # process1.join()
+    # process2.join()
+# if __name__ == '__main__':
+#     app.run(debug=True)
 
 

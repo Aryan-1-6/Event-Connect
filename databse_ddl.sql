@@ -81,7 +81,14 @@ CREATE TABLE Package (
     FOREIGN KEY (OrganizerID) REFERENCES User(UserID) ON DELETE CASCADE
 );
 	
-
+CREATE TABLE Interest (
+	interactionID INT AUTO_INCREMENT PRIMARY KEY,
+    SponsorID INT NOT NULL,
+    OrganizerID INT NOT NULL,
+    interaction_type VARCHAR(50) NOT NULL,
+    interaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    accepted BOOLEAN
+);
 
 -- Create Comment Table
 -- CREATE TABLE Comment (

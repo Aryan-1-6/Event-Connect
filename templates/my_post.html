@@ -11,32 +11,39 @@
                 <tr>
                     <th>Title</th>
                     <th>Description</th>
+                    <th>Location</th>
+                    <th>Footfall</th>
+                    <th>Popularity Factor</th>
+                    <th>Event Date</th>
                     <th>Created Date</th>
                     <th>Status</th>
                     <th>Topic</th>
-                    <th>Upvotes</th>
-                    <th>Downvotes</th>
-                    <th>Type</th>
+                    <th>Organization ID</th>
+                    <th>Package ID</th>
+                    <th>Event Type</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for index, post in posts_df.iterrows() %}
+                {% for index, event in posts_df.iterrows() %}
                     <tr>
-                        <td>{{ post['Title'] }}</td>
-                        <td>{{ post['Description'] }}</td>
-                        <td>{{ post['CreatedAtDate'] }}</td>
-                        <td>{{ post['Status'] }}</td>
-                        <td>{{ post['Topic'] }}</td>
-                        <td>{{ post['Upvotes'] }}</td>
-                        <td>{{ post['Downvotes'] }}</td>
-                        <td>{{ post['Type'] }}</td>
+                        <td>{{ event['Title'] }}</td>
+                        <td>{{ event['Description'] }}</td>
+                        <td>{{ event['Location'] }}</td>
+                        <td>{{ event['Footfall'] }}</td>
+                        <td>{{ event['Popularity Factor'] }}</td>
+                        <td>{{ event['Event Date'] }}</td>
+                        <td>{{ event['CreatedAtDate'] }}</td>
+                        <td>{{ event['Status'] }}</td>
+                        <td>{{ event['Topic'] }}</td>
+                        <td>{{ event['OrganizationID'] }}</td>
+                        <td>{{ event['PackageID'] }}</td>
+                        <td>{{ event['EventType'] }}</td>
                         <td>
-                            <a href="{{ url_for('view_post', post_id=post['PostID']) }}" class="btn btn-success btn-outline-info btn-block">View</a>
+                            <a href="{{ url_for('view_post', event_id=event['EventID']) }}" class="btn btn-success btn-outline-info btn-block">View</a>
                             <br>
-                            <a href="{{ url_for('edit_post', post_id=post['PostID']) }}" class="btn btn-success btn-outline-warning btn-block">Edit</a>
-                            <br>
-                            <form method="POST" action="{{ url_for('delete_post', post_id=post['PostID']) }}" style="display: inline;">
+                            
+                            <form method="POST" action="{{ url_for('delete_post', post_id=event['EventID']) }}" style="display: inline;">
                                 <button type="submit" class="btn btn-danger btn-outline-danger btn-block">Delete</button>
                             </form>
                         </td>

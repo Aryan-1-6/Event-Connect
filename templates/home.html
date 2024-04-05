@@ -24,10 +24,10 @@
             
             <!-- Main content section -->
             {% if posts_df is not none %}
-            <div class="posts">
+            <div class="posts" id="latest-events">
                 <ul class="list-unstyled d-flex flex-wrap">
                     {% for index, post in posts_df.iterrows() %}
-                    <div class="card mb-4 elegant-card">
+                    <div class="card mb-4 elegant-card animate__animated" data-aos="fade-up">
                         <div class="card-body">
                             <h5 class="card-title">{{ post["Title"] }}</h5>
                             <p class="card-text"><strong>Posted By:</strong> <a href="{{ url_for('user_profile', user_di=post['OrganizerID']) }}">{{ post["PostedBy"] }}</a></p>
@@ -59,6 +59,28 @@
                         <!-- Add more blog links as needed -->
                     </ul>
                 </div>
+                <div class="card-header">
+                    <h3 class="card-title">Sponsor Interests</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        {% if interest_list.empty %}
+                            <p>No sponsors have shown interest in your packages yet.</p>    
+                        {% else %}
+                            {% for index, interest in interest_list.iterrows() %}
+                                <div class="interest-card mb-3">
+                                    <p class="card-text"><strong>Request By:</strong> <a href="{{ url_for('user_profile', user_di=interest['sponsor_id']) }}">{{ interest["sponsor_name"] }}</a></p>
+                                    <p class="card-text">Timestamp: {{ interest["interaction_date"].strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                    <p class="card-text">Status: {{ interest["accepted"] }}</p>
+                                    <a href="/view_post/{{ interest['event_id'] }}" class="btn btn-primary btn-sm">View Event</a>
+                                    <p class="card-text"><strong>pkgeid:</strong> {{ interest["package_id"] }}</p>                                    
+                                    <button class="btn btn-success btn-sm accept-btn" data-package-id="{{ interest['package_id'] }}">Accept</button>
+                                    <button class="btn btn-success btn-sm reject-btn" data-package-id="{{ interest['package_id'] }}">Reject</button>
+                                </div>
+                            {% endfor %}    
+                        {% endif %}
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -75,7 +97,6 @@
     margin-bottom: 20px;
     margin-right: 20px;
     margin-top: 20px;
-
 }
 
 .elegant-card:hover {
@@ -93,7 +114,80 @@
 .card-footer {
     background-color: #f8f9fa;
 }
-</style>
-    
 
+.interest-card {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.interest-card h5 {
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+.interest-card p {
+    margin-bottom: 5px;
+}
+
+.interest-card .btn {
+    margin-top: 10px;
+}
+</style>
+
+<!-- Add JavaScript here -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+<script>
+    AOS.init({
+        once: true, // Animation only happens once
+        offset: 200 // Change offset to trigger animation earlier/later
+    });
+</script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $(".accept-btn").click(function() {
+            var packageId = $(this).data("package-id");
+            console.log(packageId)
+            $.ajax({
+                url: "/accept_request",
+                type: "POST",
+                data: { package_id: packageId },
+                success: function(response) {
+                    if (response.success) {
+                        document.querySelector(".interest-card").remove();
+                    } 
+                    else {
+                        alert("Failed to accept request.");
+                    }
+                },
+                error: function() {
+                    alert("Error occurred while accepting request.");
+                }
+            });
+        });
+
+        $(".reject-btn").click(function() {
+            var packageId = $(this).data("package-id");
+            console.log(packageId)
+            $.ajax({
+                url: "/reject_request",
+                type: "POST",
+                data: { package_id: packageId },
+                success: function(response) {
+                    if (response.success) {
+                        document.querySelector(".interest-card").remove();
+                    } 
+                    else {
+                        alert("Failed to reject request.");
+                    }
+                },
+                error: function() {
+                    alert("Error occurred while rejecting request.");
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}
