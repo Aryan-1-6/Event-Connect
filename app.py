@@ -16,7 +16,6 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from datetime import datetime
 
 sid = SentimentIntensityAnalyzer()
-
 with open("config.json", "r") as f:
     config = json.load(f)
 
@@ -34,7 +33,7 @@ app = Flask(__name__)
 bcrypt = Bcrypt(app)
 moment = Moment(app)
 app.secret_key = '1234567890'
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='eventlet')
 
 
 # login_manager = LoginManager()
@@ -285,9 +284,9 @@ def view_post(event_id):
     # data2['negative'] = [int(x) for x in data2['negative']]
     # data2['neutral'] = [int(x) for x in data2['neutral']]
     csrf_token=generate_csrf()
-
+    response_list = get_responses(user_id)
     # Render a template to view the post with comments
-    return render_template("view_post.html", post=post, packages=packages, csrf_token=csrf_token, user_id=user_id)
+    return render_template("view_post.html", post=post, packages=packages, csrf_token=csrf_token, user_id=user_id, response_list=response_list)
 
 
 
@@ -479,10 +478,13 @@ def home():
 
     if role == "Sponsor":
         response_list = get_responses(user_id)
-        return render_template("sponsor_home.html", posts_df=posts_df, response_list=response_list, checkloggedin=checkloggedin)
+        message_list = chat_list(user_id)
+        return render_template("sponsor_home.html", posts_df=posts_df, response_list=response_list, message_list=message_list, checkloggedin=checkloggedin)
     else:
         interest_list = pd.DataFrame(get_interests(user_id))
-        return render_template("home.html", posts_df=posts_df, interest_list=interest_list, checkloggedin=checkloggedin)
+        message_list = chat_list(user_id)
+        print(message_list)
+        return render_template("home.html", posts_df=posts_df, user_id=session["user_id"], interest_list=interest_list, message_list=message_list,checkloggedin=checkloggedin)
 
 
 def get_responses(user_id):
@@ -500,13 +502,12 @@ def get_responses(user_id):
         response_dict = {
             "sponsor_name": response[0],
             "package_id": response[1],
-            "interaction_date": pd.to_datetime(response[2]),
+            "interaction_date": (pd.to_datetime(response[2])).strftime('%Y-%m-%d %H:%M:%S'),
             "accepted": val,
             "event_id": response[4],
             "sponsor_id": response[5]
         }
         response_list.append(response_dict)
-    print(response_list)
     return response_list
 
 def get_interests(user_id):
@@ -526,19 +527,112 @@ def get_interests(user_id):
             "sponsor_id": interest[5]
         }
         interest_list.append(interest_dict)
-    print(interest_list)
     return interest_list
 
 @app.route("/accept_request", methods=["POST"])
 def accept_interest():
     print("mdmdls")
     package_id = request.form.get("package_id")
+    sponsor_id = request.form.get("sponsor_id")
+    organiser_id = request.form.get("organiser_id")
+
     if package_id != "":
         query = "UPDATE Interest SET accepted=1 WHERE PackageID=%s;"
         cursor.execute(query, (package_id,))
         cnx.commit()
-        return jsonify({"success": True})
+        
+        query = "INSERT INTO Interaction (sponsor_id,organiser_id,package_id) VALUES (%s,%s,%s)"
+        cursor.execute(query, (sponsor_id, organiser_id, package_id))
+        cnx.commit()
+        
+        query = "SELECT chatbox_id FROM Interaction WHERE sponsor_id=%s AND organiser_id=%s AND package_id=%s"
+        cursor.execute(query, (sponsor_id, organiser_id, package_id))
+        chatbox_id = cursor.fetchall()
+
+        return jsonify({"success": True, "boxid": chatbox_id})
     return jsonify({"success": False})
+
+def create_chat(package_id):
+    # Your logic to fetch the organizer's information based on the package ID goes here
+    # For example, you might join the Packages table with the Users table to get the organizer's information
+    # Assuming you have a Packages table with an organizer_id column that references the Users table
+    query = "SELECT Chatbox.msg_id, Chatbox.box_id, Chatbox.sender_id, Chatbox.receiver_id FROM Chatbox WHERE Chatbox.box_id = %s"
+    cursor.execute(query, (package_id, ))
+    post_data = cursor.fetchall()
+    if post_data != []:
+        return post_data
+    else:
+        return None
+
+# @app.route('/chat_list', methods=["GET","POST"])
+def chat_list(user_id):
+    query = "SELECT Role,Name FROM User WHERE UserID=%s"
+    cursor.execute(query, (user_id, ))
+    data = cursor.fetchall()
+    role = data[0][0]
+    print((role))
+    name = data[0][1]
+
+    if(role == "Organiser"):
+        query = "SELECT chatbox_id, sponsor_id FROM Interaction WHERE organiser_id=%s"
+        query2 = "SELECT Name FROM User WHERE sponsor_id=%s"
+    else:
+        query = "SELECT chatbox_id, organiser_id FROM Interaction WHERE sponsor_id=%s"
+        query2 = "SELECT Name FROM User WHERE Organiser_id=%s"
+        
+    cursor.execute(query, (user_id, ))
+    ch = cursor.fetchall()
+    
+
+    chat_list = []
+    for chat in cursor.fetchall():
+        cursor.execute(query2, ch[1])
+        ch2 = cursor.fetchall()
+        chat_dict = {
+            "box_id": ch[0],
+            "sponsor_id": ch[1],
+            "name": ch2[0]
+        }
+
+        chat_list.append(chat_dict)
+    return chat_list
+
+
+@app.route('/chat_box/<int:box_id>', methods=["GET","POST"])
+def chat_box(box_id):
+    if "user_id" in session:
+        user_id = session["user_id"]
+
+    query = "SELECT Role,Name FROM User WHERE UserID=%s"
+    cursor.execute(query, (user_id, ))
+    data = cursor.fetchall()
+    myrole = data[0][0]
+    myname = data[0][1]
+    print(myname)
+    name="User"
+    if(myrole == "Organiser"):
+        role="Sponsor"
+        query = "SELECT sponsor_id FROM Interaction WHERE chatbox_id=%s"
+        cursor.execute(query, (box_id,))
+        res = cursor.fetchall()
+
+        receiver_id = res[0][0]
+        query = "SELECT Name FROM User WHERE UserID=%s"
+        cursor.execute(query, (receiver_id, ))
+        name = cursor.fetchall()
+    elif(myrole == "Sponsor"):
+        role="Organiser"
+        query = "SELECT sponsor_id FROM Interaction WHERE chatbox_id=%s"
+        cursor.execute(query, (box_id,))
+        res = cursor.fetchall()
+
+        receiver_id = res[0][0]
+
+        query = "SELECT Name FROM User WHERE UserID=%s"
+        cursor.execute(query, (receiver_id, ))
+        name = cursor.fetchall()
+
+    return render_template('chatbox.html', box_id=box_id, Name=name[0][0], receiver_id=receiver_id, user_id=user_id, role=role, myname=myname)
 
 @app.route("/reject_request", methods=["POST"])
 def reject_interest():
@@ -592,7 +686,7 @@ def my_posts():
         query = f"SELECT * FROM Event WHERE OrganizerID = {user_id}"
         cursor.execute(query)
         user_posts = cursor.fetchall()
-        posts_df = pd.DataFrame(user_posts, columns=["EventID", "Title", "Location","footfall","popularity_factor","Description","EventDate", "CreatedAtDate", "Status", "Topic", "OrganizationID", "PackageID", "EventType"])
+        posts_df = pd.DataFrame(user_posts, columns=["EventID", "Title", "Location","footfall","popularity_factor","Description","EventDate", "CreatedAtDate", "Status", "Topic", "PackageID", "EventType"])
         post_id = 1
         checkloggedin = True
         return render_template("my_post.html", posts_df=posts_df, post_id = post_id, checkloggedin=checkloggedin)
@@ -706,9 +800,9 @@ def fetch_filtered_posts(location, eventType, eventTopic, footfall_to, footfall_
         params.append(footfall_to)  
     if e:
         if a or b or c or d:
-            query += " AND Package.Price >= %s AND Package.Price_limit <= %s"
+            query += " AND Package.Price >= %s OR Package.Price_limit <= %s"
         else:
-            query += " WHERE Package.Price >= %s AND Package.Price_limit <= %s"
+            query += " WHERE Package.Price >= %s OR Package.Price_limit <= %s"
         params.append(budget_from)
         params.append(budget_to)  
  
@@ -741,6 +835,8 @@ def fetch_filtered_posts(location, eventType, eventTopic, footfall_to, footfall_
 
 @app.route('/apply_filters', methods=['POST'])
 def apply_filters():
+    if "user_id" in session:
+        user_id = session["user_id"]
     # Retrieve filter parameters from the form data
     location = request.form.get('location')
     eventType = request.form.get('eventType')
@@ -750,10 +846,10 @@ def apply_filters():
     attendeesFrom = request.form.get('attendeesFrom')
     attendeesTo = request.form.get('attendeesTo')
 
-
+    response_list = get_responses(user_id)
     posts_df = pd.DataFrame(fetch_filtered_posts(location, eventType, eventTopic,attendeesTo, attendeesFrom, budgetFrom, budgetTo))
 
-    return render_template('sponsor_home.html', posts_df=posts_df)
+    return render_template('sponsor_home.html', posts_df=posts_df, response_list = get_responses(user_id))
 
 def get_organizer_info(package_id):
     # Your logic to fetch the organizer's information based on the package ID goes here
@@ -790,15 +886,11 @@ def show_interest():
         
         query = "INSERT into Interest (SponsorID, OrganizerID, PackageID, interaction_type, accepted) VALUES (%s,%s,%s,%s,%s)"
         values =  (sponsor_id, organizer_id, package_id, interaction_type, accepted)
-        print(values)
         cursor.execute(query, values)
         cnx.commit()
         return jsonify({'success': True})
     else:
         return jsonify({'success': False, 'message': 'Organizer identifier not found.'}), 405
-
-
-
 
 
 @app.route("/organization_info/<int:org_id>", methods=["GET", "POST"])
@@ -820,33 +912,27 @@ def organization_info(org_id):
         flash("Please log in to view organization information", "danger")
         return redirect(url_for("login"))
 
+
+def messageReceived(methods=['GET', 'POST']):
+    print('message was received!!!')
+
+@socketio.on('my event')
+def handle_my_custom_event(json, methods=['GET', 'POST']):
+    # print('received my event: ' + str(json))
+    query = "INSERT INTO Chatbox (sender_id, receiver_id, message, box_id) VALUES (%s,%s,%s,%s)"
+    cursor.execute(query, (json['sender_id'], json['receiver_id'], json['message'], json['box_id']))
+    cnx.commit()
+    socketio.emit('my response', json, callback=messageReceived)
+
+
+
 def run_flask_app(host, port):
     app.run(host=host, port=port)
 
+
 if __name__ == "__main__":
-    
-    # app.run(host='192.168.56.1') 
-    app.run(debug=True) 
-    
-    # IP and port for the first instance
-    # host1 = '127.0.0.1'  # Replace with your desired IP address
-    # port1 = 5000  # Replace with your desired port number
-
-    # # IP and port for the second instance
-    # host2 = '192.168.56.1'  # Replace with your desired IP address
-    # port2 = 5000  # Replace with your desired port number
-
-    # # Create two separate processes for running each instance
-    # process1 = Process(target=run_flask_app, args=(host1, port1))
-    # process2 = Process(target=run_flask_app, args=(host2, port2))
-
-    # # Start both processes
-    # process1.start()
-    # process2.start()
-    # # app.run(host=host2)
-    # # Wait for both processes to finish
-    # process1.join()
-    # process2.join()
+    # app.run(debug=True) 
+    socketio.run(app)
 # if __name__ == '__main__':
 #     app.run(debug=True)
 

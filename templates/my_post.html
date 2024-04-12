@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="container">
-    <h2>My Posts</h2>
+    <h2>My Events</h2>
     <div class="table-responsive">
         <table class="table table-bordered table-striped">
             <thead class="thead-dark">
@@ -18,8 +18,6 @@
                     <th>Created Date</th>
                     <th>Status</th>
                     <th>Topic</th>
-                    <th>Organization ID</th>
-                    <th>Package ID</th>
                     <th>Event Type</th>
                     <th>Actions</th>
                 </tr>
@@ -30,21 +28,19 @@
                         <td>{{ event['Title'] }}</td>
                         <td>{{ event['Description'] }}</td>
                         <td>{{ event['Location'] }}</td>
-                        <td>{{ event['Footfall'] }}</td>
-                        <td>{{ event['Popularity Factor'] }}</td>
-                        <td>{{ event['Event Date'] }}</td>
+                        <td>{{ event['footfall'] }}</td>
+                        <td>{{ event['popularity_factor'] }}</td>
+                        <td>{{ event['EventDate'] }}</td>
                         <td>{{ event['CreatedAtDate'] }}</td>
                         <td>{{ event['Status'] }}</td>
                         <td>{{ event['Topic'] }}</td>
-                        <td>{{ event['OrganizationID'] }}</td>
-                        <td>{{ event['PackageID'] }}</td>
                         <td>{{ event['EventType'] }}</td>
                         <td>
-                            <a href="{{ url_for('view_post', event_id=event['EventID']) }}" class="btn btn-success btn-outline-info btn-block">View</a>
+                            <a href="{{ url_for('view_post', event_id=event['EventID']) }}" class="btn btn-success btn-block">View</a>
                             <br>
                             
                             <form method="POST" action="{{ url_for('delete_post', post_id=event['EventID']) }}" style="display: inline;">
-                                <button type="submit" class="btn btn-danger btn-outline-danger btn-block">Delete</button>
+                                <button type="submit" class="btn btn-danger btn-block">Delete</button>
                             </form>
                         </td>
                     </tr>

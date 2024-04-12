@@ -72,9 +72,8 @@
                                     <p class="card-text"><strong>Request By:</strong> <a href="{{ url_for('user_profile', user_di=interest['sponsor_id']) }}">{{ interest["sponsor_name"] }}</a></p>
                                     <p class="card-text">Timestamp: {{ interest["interaction_date"].strftime('%Y-%m-%d %H:%M:%S') }}</p>
                                     <p class="card-text">Status: {{ interest["accepted"] }}</p>
-                                    <a href="/view_post/{{ interest['event_id'] }}" class="btn btn-primary btn-sm">View Event</a>
-                                    <p class="card-text"><strong>pkgeid:</strong> {{ interest["package_id"] }}</p>                                    
-                                    <button class="btn btn-success btn-sm accept-btn" data-package-id="{{ interest['package_id'] }}">Accept</button>
+                                    <a href="/view_post/{{ interest['event_id'] }}" class="btn btn-primary btn-sm">View Event</a>                                    
+                                    <button class="btn btn-success btn-sm accept-btn" data-package-id="{{ interest['package_id'] }}" data-sponsor-id="{{ interest['sponsor_id'] }}" data-organiser-id="{{ user_id }}" >Accept</button>
                                     <button class="btn btn-success btn-sm reject-btn" data-package-id="{{ interest['package_id'] }}">Reject</button>
                                 </div>
                             {% endfor %}    
@@ -149,14 +148,18 @@
     $(document).ready(function() {
         $(".accept-btn").click(function() {
             var packageId = $(this).data("package-id");
-            console.log(packageId)
+            var sponsorId = $(this).data("sponsor-id");
+            var organiserId = $(this).data("organiser-id");
+            
             $.ajax({
                 url: "/accept_request",
                 type: "POST",
-                data: { package_id: packageId },
+                data: { package_id: packageId, sponsor_id: sponsorId, organiser_id: organiserId },
                 success: function(response) {
                     if (response.success) {
+                        var box_id = response.boxid
                         document.querySelector(".interest-card").remove();
+                        window.location.href = "/chat_box/" + box_id;
                     } 
                     else {
                         alert("Failed to accept request.");
@@ -189,5 +192,87 @@
             });
         });
     });
+</script>
+{% endblock %}
+
+{% block extra_footer %}
+<style>
+    .side_nav a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            right: 10;
+            display: block;
+            transition: 0.3s;
+        }
+
+    /* Links on mouse-over */
+    .side_nav a:hover {
+        right: 10px;
+        color: #f1f1f1;
+    }
+
+    /* Close button on hover */
+    .closeb:hover {
+        right: 10px;
+        color: #f1f1f1;
+    }
+
+</style>
+
+<footer class="footer text-center py-3">
+    <!-- New message logo button -->
+    <div class="message-card mb-3">
+        <div class="message-button" onclick="openMessagePopup()">
+            <i class="fas fa-envelope"></i> <!-- Assuming you're using Font Awesome for the envelope icon -->
+        </div>
+    </div>
+    <!-- Message popup -->
+    <div id="messagePopup" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeMessagePopup()">&times;</span>
+            <h2 style="font-family: 'Arial', sans-serif; font-size: 24px;">Messages</h2>
+            <div id="messageContent"></div>
+        </div>
+    </div>
+    <small>event-connect &copy; 2023</small>
+
+</footer>
+
+<script>
+    function openMessagePopup() {
+        var chats = {{ message_list|tojson }}
+        var popup = document.getElementById("messagePopup");
+        popup.style.display = "block";
+
+        chats.forEach(function(msg) {
+            var messageElement = document.createElement('p');
+            messageElement.classList.add('message-item');
+            messageElement.innerHTML = `
+                <div class="message-details">
+                   <strong>Name:</strong> ${msg.name}<br>
+                    <hr>
+                </div>
+                <div class="message-action">
+                    <a href="/chat_box/${msg.box_id}">View Message</a>
+                </div>
+            `;
+            // Prepend the new message to the top of the container
+            contentContainer.prepend(messageElement);
+        });
+    }
+
+    function closeMessagePopup() {
+        var popup = document.getElementById("messagePopup");
+        popup.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        var popup = document.getElementById("messagePopup");
+        if (event.target == popup) {
+            popup.style.display = "none";
+        }
+    };
 </script>
 {% endblock %}

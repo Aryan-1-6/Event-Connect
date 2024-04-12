@@ -90,6 +90,18 @@ CREATE TABLE Interest (
     accepted BOOLEAN
 );
 
+CREATE TABLE chat_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    package_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    receiver_id INT NOT NULL,
+    message TEXT NOT NULL,
+    timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (package_id) REFERENCES sponsor_requests(id),
+    FOREIGN KEY (sender_id) REFERENCES users(id),
+    FOREIGN KEY (receiver_id) REFERENCES users(id)
+);
+
 -- Create Comment Table
 -- CREATE TABLE Comment (
 --     CommentID INT AUTO_INCREMENT PRIMARY KEY,
