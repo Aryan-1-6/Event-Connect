@@ -149,6 +149,7 @@
         });
     });
 </script>
+
 <script>
     var res = {{ response_list|tojson }}
 
@@ -196,9 +197,84 @@
 </script>
 {% endblock %}
 {% block extra_footer %}
+<style>
+    .side_nav a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            right: 10;
+            display: block;
+            transition: 0.3s;
+        }
+
+    /* Links on mouse-over */
+    .side_nav a:hover {
+        right: 10px;
+        color: #f1f1f1;
+    }
+
+    /* Close button on hover */
+    .closeb:hover {
+        right: 10px;
+        color: #f1f1f1;
+    }
+
+</style>
+
 <footer class="footer text-center py-3">
-    <div class="message-card mb-4" style="position: fixed; bottom: 60px; right: 20px;">
-        <a href="/chat" class="message-button"><i class="fas fa-envelope"></i></a>
+    <!-- New message logo button -->
+    <div class="message-card mb-3">
+        <div class="message-button" onclick="openMessagePopup()">
+            <i class="fas fa-envelope"></i> <!-- Assuming you're using Font Awesome for the envelope icon -->
+        </div>
     </div>
+    <!-- Message popup -->
+    <div id="messagePopup" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeMessagePopup()">&times;</span>
+            <h2 style="font-family: 'Arial', sans-serif; font-size: 24px;">Messages</h2>
+            <div id="messageContent"></div>
+        </div>
+    </div>
+    <small>event-connect &copy; 2023</small>
+
 </footer>
+
+<script>
+    function openMessagePopup() {
+        var chats = {{ message_list|tojson }}
+        var popup = document.getElementById("messagePopup");
+        popup.style.display = "block";
+        var contentContainer = document.getElementById('messageContent');
+
+        chats.forEach(function(msg) {
+            console.log($(msg.box_id))
+            var messageElement = document.createElement('p');
+            messageElement.classList.add('message-item');
+            messageElement.innerHTML = `
+                <div class="message-details">
+                   <strong>Name:</strong> ${msg.name}<br>
+                    <hr>
+                </div>
+                <div class="message-action">
+                    <a href="/view_chat/${msg.box_id}">View Message</a>
+                </div>
+            `;
+            contentContainer.prepend(messageElement);
+        });
+    }
+
+    function closeMessagePopup() {
+        var popup = document.getElementById("messagePopup");
+        popup.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        var popup = document.getElementById("messagePopup");
+        if (event.target == popup) {
+            popup.style.display = "none";
+        }
+    };
+</script>
 {% endblock %}

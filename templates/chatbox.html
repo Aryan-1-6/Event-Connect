@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Chat - Your App Name{% endblock %}
+{% block title %}chatBox{% endblock %}
 
 {% block content %}
 <style>
@@ -57,13 +57,13 @@
 
     .my-message {
         background-color: #e6e318;
-        float: right;
+        float: left;
         color: #000;
     }
 
     .their-message {
-        background-color: #e6e318;
-        float: left;
+        background-color: #26e618;
+        float: right;
         color: #000;
     }
 
@@ -88,28 +88,67 @@
         color: #fff;
         cursor: pointer;
     }
-</style>
+    .deal-button {
+        padding: 10px 20px;
+        background-color: #0084ff; /* Blue background color */
+        color: #fff; /* White text color */
+        border: none;
+        border-radius: 20px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-top: 20px; /* Adjust spacing from other elements */
+    }
 
+    .deal-button:hover {
+        background-color: #0056b3; /* Darker shade on hover */
+    }
+</style>
 <div class="chat-container">
     <div class="username-container">
         <div class="username-value">{{ Name }}</div>
         <div class="username-label">{{ role }}</div>
     </div>
     <div class="message-container" id="message-container">
-
+        {% if msg_list %}
+            {% for msg in msg_list %}
+                <div class="message-bubble {% if msg.sid == user_id %}my-message{% else %}their-message{% endif %}">
+                    {% if msg.sid == user_id %}
+                        <div class="message-sender">{{ myname }}</div>
+                        {{ msg.msg }}
+                    {% else %}
+                        <div class="message-sender">{{ Name }}</div>
+                        {{ msg.msg }}
+                    
+                    {% endif %}    
+                </div>
+            {% endfor %}
+        {% endif %}
     </div>
 
-    <form id="message-form" class="chat-form">
-        
+    <form id="message-form" class="chat-form">     
         <input type="text" id="message" placeholder="Type your message...">
         <button type="submit">Send</button>
     </form>
+    {% if role == "Organiser" %}
+        <button id="dealButton" class="deal-button" onclick="redirectToFeedback()">Make a Deal</button>
+    {% else %}
+        <a class="nav-link" href="/home">Home <span class="sr-only">(current)</span></a>
+    {% endif %}
 </div>
 
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
+<script>
+function redirectToFeedback() {
+    window.location.href = "/feedback/" + "{{ receiver_id }}" ;
+}
+function redirectToHHome() {
+    window.location.href = "/home" ;
+}
 
+</script>
 <script type="text/javascript">
     $(document).ready(function(){
         var socket = io.connect('http://' + document.domain + ':' + location.port);
@@ -137,7 +176,8 @@
 
         socket.on('my response', function(msg) {
             if (typeof msg.user_name !== 'undefined') {
-                var messageClass = (msg.user_name == $('#username').val()) ? 'my-message' : 'their-message';
+                console.log($('#username').val())
+                var messageClass = (msg.user_name == "{{ myname }}") ? 'my-message' : 'their-message';
                 $('#message-container').append('<div class="message-bubble ' + messageClass + '"><div class="message-sender">' + msg.user_name + '</div>' + msg.message + '</div>');
                 $('#message-container').scrollTop($('#message-container')[0].scrollHeight);
             }

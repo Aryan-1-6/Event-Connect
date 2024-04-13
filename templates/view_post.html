@@ -61,8 +61,9 @@
 <div id="analyticsSidebar" class="sidebar">
     <!-- Close button for the sidebar -->
     <button class="close-btn" onclick="closeSidebar()">✖</button>
-    <h2 class="sidebar-title text-center">Analytics</h2> <!-- Updated class to align center -->
-    <!-- Add analytics content here -->
+    <h2 class="sidebar-title text-center">Analytics</h2>
+    <!-- Container for analytics content -->
+    <div id="analyticsContent" class="analytics-content"></div>
 </div>  
 
 <!-- Add CSS here -->
@@ -138,6 +139,10 @@
     .card-text {
         margin-bottom: 15px;
     }
+    #analyticsChart {
+        width: 100%;
+        height: 300px; /* Adjust height as needed */
+    }
 </style>
 
 <!-- Add JavaScript here -->
@@ -145,7 +150,57 @@
     // Open sidebar function
     function openSidebar() {
         document.getElementById("analyticsSidebar").style.right = "0";
+
+        // Get the container for analytics content
+        var analyticsContainer = document.getElementById("analyticsContent");
+
+        // Clear previous analytics data
+        analyticsContainer.innerHTML = "";
+
+        // Create a canvas element for the chart
+        var canvas = document.createElement("canvas");
+        canvas.id = "analyticsChart";
+        analyticsContainer.appendChild(canvas);
+
+        // Get the context of the canvas element
+        var ctx = canvas.getContext('2d');
+
+        // Sample data for the chart (replace with actual analytics data)
+        var successCriteria = {{ success_criteria|tojson }};
+
+        // Extract parameter names and success percentages from the successCriteria object
+        var parameterNames = Object.keys(successCriteria);
+        var successPercentages = Object.values(successCriteria);
+
+        // Create the chart using Chart.js
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: parameterNames,
+                datasets: [{
+                    label: 'Success Percentage',
+                    data: successPercentages,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)', // Adjust color as needed
+                    borderColor: 'rgba(54, 162, 235, 1)', // Adjust color as needed
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true,
+                            callback: function(value) {
+                                return value + '%'; // Add percentage symbol to y-axis ticks
+                            }
+                        }
+                    }]
+                }
+            }
+        });
     }
+
+
 
     // Close sidebar function
     function closeSidebar() {

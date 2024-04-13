@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Sponsors{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Add the search bar -->
+            <form method="post" class="form-inline my-2 my-lg-0 mb-4">
+                <input class="form-control mr-sm-2" type="text" name="search_query" placeholder="Search">
+                <button class="btn btn-primary" type="submit">Search</button>
+            </form>
+            
+            <!-- List of sponsors -->
+            <h2 class="display-4 mt-5 ml-2 mb-3" style="font-size: 50px;">Sponsors</h2>
+            <div class="sponsor-list">
+                {% if sponsors_data %}
+                    <ul class="list-group">
+                        {% for sponsor in sponsors_data %}
+                            <li class="list-group-item">{{ sponsor.name }}</li>
+                            <li class="list-group-item">{{ sponsor.email_id }}</li>
+                            <div class="col-md-4 text-center">
+                                {% if sponsor.profile_pic'].values)[0] is not none %}
+                                <img src="../{{ (posts_df['profile_pic'].values)[0].decode('utf-8').replace('\\','/') }}" class="img-fluid rounded-circle profile-image" alt="Profile Picture">
+                                {% else %}
+                                <img src="../static/dummy-profile.png" class="img-fluid rounded-circle profile-image" alt="Default Profile Picture" style="max-width: 150px; height: auto;">
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No sponsors found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

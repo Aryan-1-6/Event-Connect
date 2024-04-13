@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Your App Name{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f5f5f5;
+        margin: 0;
+        padding: 0;
+    }
+    .container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 30px;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    h2 {
+        margin-top: 0;
+        text-align: center;
+        color: #333;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+    }
+    input[type="text"],
+    input[type="date"],
+    textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+        margin-top: 5px;
+    }
+    textarea {
+        resize: vertical;
+        height: 100px;
+    }
+    button[type="submit"] {
+        background-color: #0084ff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    button[type="submit"]:hover {
+        background-color: #0056b3;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+<h2>Feedback Form</h2>
+    <form action="/submit_feedback/{{ event_id }}" method="POST">
+        <div class="form-group">
+            <label for="event_name">Event Name: {{ title }}</label>
+        </div>
+        <div class="form-group">
+            <label for="rating">Rating:</label>
+            <input type="number" id="rating" name="rating" min="1" max="5" required>
+        </div>
+
+        <div class="form-group">
+            <label for="sponsorship_exhibitors">Deliverables Quality/Quantity:</label>
+            <select id="sponsorship_exhibitors" name="sponsorship_exhibitors" required>
+                <option value="">Select</option>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="average">Average</option>
+                <option value="bad">Bad</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="experienced_footfall">Experienced Footfall:</label>
+            <select id="experienced_footfall" name="experienced_footfall" required>
+                <option value="">Select</option>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="average">Average</option>
+                <option value="bad">Bad</option>
+            </select>
+        </div>
+        
+        
+        <div class="form-group">
+            <label for="overall_satisfaction">Overall Satisfaction:</label>
+            <select id="overall_satisfaction" name="overall_satisfaction" required>
+                <option value="">Select</option>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="average">Average</option>
+                <option value="bad">Bad</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="communication">Communication:</label>
+            <select id="communication" name="communication" required>
+                <option value="">Select</option>
+                <option value="supportive">Supportive</option>
+                <option value="negligent">Negligent</option>
+                <option value="aggressive">Aggressive</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="organization">Event Organization:</label>
+            <select id="organization" name="organization" required>
+                <option value="">Select</option>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="average">Average</option>
+                <option value="bad">Bad</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="venue">Venue:</label>
+            <select id="venue" name="venue" required>
+                <option value="">Select</option>
+                <option value="popular">Popular</option>
+                <option value="remote">Remote</option>
+                <option value="unhygenic">Unhygenic</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="logistics">Logistics:</label>
+            <select id="logistics" name="logistics" required>
+                <option value="">Select</option>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="average">Average</option>
+                <option value="bad">Bad</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="catering_food">Catering/Food:</label>
+            <select id="catering_food" name="catering_food" required>
+                <option value="">Select</option>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="average">Average</option>
+                <option value="bad">Bad</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="technology_equipment">Technology/Equipment:</label>
+            <select id="technology_equipment" name="technology_equipment" required>
+                <option value="">Select</option>
+                <option value="excellent">Excellent</option>
+                <option value="inadequate">Inadequate</option>
+                <option value="poor quality">Poor Quality</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="sustainability">Sustainability:</label>
+            <select id="sustainability" name="sustainability" required>
+                <option value="">Select</option>
+                <option value="sustainable">Sustainable</option>
+                <option value="non-sustainable">Non-Sustainable</option>
+            </select>
+        </div>
+
+        
+        <div class="form-group">
+            <label for="comments">Comments:</label>
+            <textarea id="comments" name="comments" rows="4"></textarea>
+        </div>
+        <div class="form-group">
+            <button type="submit">Submit Feedback</button>
+        </div>
+    </form>
+</div>
+{% endblock %}  

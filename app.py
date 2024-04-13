@@ -285,8 +285,9 @@ def view_post(event_id):
     # data2['neutral'] = [int(x) for x in data2['neutral']]
     csrf_token=generate_csrf()
     response_list = get_responses(user_id)
+    success_criteria = trigger_analytics(event_id)
     # Render a template to view the post with comments
-    return render_template("view_post.html", post=post, packages=packages, csrf_token=csrf_token, user_id=user_id, response_list=response_list)
+    return render_template("view_post.html", post=post, packages=packages, csrf_token=csrf_token, user_id=user_id, response_list=response_list, event_id=event_id, success_criteria=success_criteria)
 
 
 
@@ -454,6 +455,25 @@ def rank_posts():
     sorted_res = dict(sorted_res)
     return list(sorted_res.keys())
 
+
+@app.route('/sponsors')
+def sponsors():
+    query = "SELECT UserID, Name, Email, profile_pic FROM User WHERE Role='Sponsor'"
+    cursor.execute(query)
+    sponsors = cursor.fetchall()
+    s_list = []
+    for s in sponsors:
+        s_dict = {
+            "user_id": sponsors[0],
+            "name": sponsors[1],
+            "email_id": sponsors[2],
+            "profile_pic": sponsors[3]
+        }
+        s_list.append(s_dict)
+
+    return render_template('sponsors.html', sponsors_data=s_list)
+
+
 @app.route("/home", methods=["GET", "POST"])
 def home():
     # posts_df=get_posts()
@@ -478,11 +498,12 @@ def home():
 
     if role == "Sponsor":
         response_list = get_responses(user_id)
-        message_list = chat_list(user_id)
-        return render_template("sponsor_home.html", posts_df=posts_df, response_list=response_list, message_list=message_list, checkloggedin=checkloggedin)
+        message_list = chat_list(user_id, 1)
+        print(message_list)
+        return render_template("sponsor_home.html", posts_df=posts_df, user_id=session["user_id"], response_list=response_list, message_list=message_list, checkloggedin=checkloggedin)
     else:
         interest_list = pd.DataFrame(get_interests(user_id))
-        message_list = chat_list(user_id)
+        message_list = chat_list(user_id, 0)
         print(message_list)
         return render_template("home.html", posts_df=posts_df, user_id=session["user_id"], interest_list=interest_list, message_list=message_list,checkloggedin=checkloggedin)
 
@@ -548,14 +569,15 @@ def accept_interest():
         query = "SELECT chatbox_id FROM Interaction WHERE sponsor_id=%s AND organiser_id=%s AND package_id=%s"
         cursor.execute(query, (sponsor_id, organiser_id, package_id))
         chatbox_id = cursor.fetchall()
-
+    
+        print(chatbox_id)
+        if len(chatbox_id) > 1:
+            return jsonify({"success": False})
+            
         return jsonify({"success": True, "boxid": chatbox_id})
     return jsonify({"success": False})
 
 def create_chat(package_id):
-    # Your logic to fetch the organizer's information based on the package ID goes here
-    # For example, you might join the Packages table with the Users table to get the organizer's information
-    # Assuming you have a Packages table with an organizer_id column that references the Users table
     query = "SELECT Chatbox.msg_id, Chatbox.box_id, Chatbox.sender_id, Chatbox.receiver_id FROM Chatbox WHERE Chatbox.box_id = %s"
     cursor.execute(query, (package_id, ))
     post_data = cursor.fetchall()
@@ -564,33 +586,83 @@ def create_chat(package_id):
     else:
         return None
 
-# @app.route('/chat_list', methods=["GET","POST"])
-def chat_list(user_id):
+@app.route('/view_chat/<int:box_id>', methods=["GET","POST"])
+def view_chat(box_id):
+    if "user_id" in session:
+        user_id = session["user_id"]
     query = "SELECT Role,Name FROM User WHERE UserID=%s"
     cursor.execute(query, (user_id, ))
     data = cursor.fetchall()
-    role = data[0][0]
-    print((role))
-    name = data[0][1]
+    Role = data[0][0]
+    myname = data[0][1]
 
-    if(role == "Organiser"):
+    query = "SELECT message, sender_id, receiver_id FROM Chatbox WHERE box_id=%s"
+    cursor.execute(query, (box_id, ))
+    messages = cursor.fetchall()
+    
+    query = "SELECT sponsor_id, organiser_id FROM Interaction WHERE chatbox_id=%s"
+    cursor.execute(query, (box_id, ))
+    ids = cursor.fetchall()
+    sponsor_id = ids[0][0]
+    organiser_id = ids[0][1]
+    
+    if(Role == "Sponsor"):
+        print('wfooebbeobmeob')
+        query = "SELECT Name FROM User WHERE UserID=%s"
+        cursor.execute(query, (organiser_id, ))
+        name = (cursor.fetchall())[0][0]
+        rec_id = organiser_id
+        opp_role = "Organiser"
+    else:
+        query = "SELECT Name FROM User WHERE UserID=%s"
+        cursor.execute(query, (sponsor_id, ))
+        name = (cursor.fetchall())[0][0]
+        rec_id = sponsor_id
+        opp_role = "Sponsor"
+
+    msg_list = []
+    for message, sid, rid in messages:
+        if sid == user_id and message != "":
+            msg_dict = {
+                "sid": user_id,
+                "msg": message,
+                "rid": rec_id
+            }
+        elif sid != user_id and message != "":
+            msg_dict = {
+                "sid": rec_id,
+                "msg": message,
+                "rid": user_id
+            } 
+        msg_list.append(msg_dict)
+
+    return render_template('chatbox.html',box_id=box_id , msg_list=msg_list, user_id=user_id, Name=name, myname=myname,  receiver_id=rec_id, role=opp_role)
+
+
+# @app.route('/chat_list', methods=["GET","POST"])
+def chat_list(user_id, flag):
+    query = "SELECT Name FROM User WHERE UserID=%s"
+    cursor.execute(query, (user_id, ))
+    data = cursor.fetchall()
+    name = data[0][0]
+
+    if(flag == 0):
         query = "SELECT chatbox_id, sponsor_id FROM Interaction WHERE organiser_id=%s"
-        query2 = "SELECT Name FROM User WHERE sponsor_id=%s"
+        query2 = "SELECT Name FROM User WHERE UserID=%s"
     else:
         query = "SELECT chatbox_id, organiser_id FROM Interaction WHERE sponsor_id=%s"
-        query2 = "SELECT Name FROM User WHERE Organiser_id=%s"
+        query2 = "SELECT Name FROM User WHERE UserID=%s"
         
     cursor.execute(query, (user_id, ))
-    ch = cursor.fetchall()
-    
+    ch = cursor.fetchall()    
 
     chat_list = []
-    for chat in cursor.fetchall():
-        cursor.execute(query2, ch[1])
+    for chat in ch:
+        cursor.execute(query2, (chat[1], ))
         ch2 = cursor.fetchall()
         chat_dict = {
-            "box_id": ch[0],
-            "sponsor_id": ch[1],
+            "box_id": chat[0],
+            "sponsor_id": chat[1],
             "name": ch2[0]
         }
 
@@ -632,7 +704,129 @@ def chat_box(box_id):
         cursor.execute(query, (receiver_id, ))
         name = cursor.fetchall()
 
-    return render_template('chatbox.html', box_id=box_id, Name=name[0][0], receiver_id=receiver_id, user_id=user_id, role=role, myname=myname)
+    return render_template('chatbox.html', box_id=box_id, Name=name[0][0], receiver_id=receiver_id, user_id=user_id, role=role, myname=myname, msg_list=[])
+
+def analyze_event_feedback(feedback_data):
+    total_feedback = len(feedback_data)
+    if(total_feedback == 0):
+        return 0
+    successful_ratings = [feedback['rating'] for feedback in feedback_data if feedback['rating'] >= 3.6]
+    successful_sponsorship = [feedback['sponsorship_exhibitors'] for feedback in feedback_data if feedback['sponsorship_exhibitors'] in ['excellent', 'good']]
+    successful_footfall = [feedback['experienced_footfall'] for feedback in feedback_data if feedback['experienced_footfall'] in ['excellent', 'good', 'average']]
+    successful_satisfaction = [feedback['overall_satisfaction'] for feedback in feedback_data if feedback['overall_satisfaction'] in ['excellent', 'good']]
+    # successful_parameters = [feedback[param] for feedback in feedback_data for param in ['communication', 'organization', 'venue', 'logistics', 'catering_food', 'technology_equipment', 'sustainability'] if feedback[param] in ['excellent', 'good']]
+    successful_communication = [feedback['communication'] for feedback in feedback_data if feedback['communication'] in ['supportive', 'negligent', 'aggressive']]
+    successful_organization = [feedback['organization'] for feedback in feedback_data if feedback['organization'] in ['excellent', 'good', 'average']]
+    successful_venue = [feedback['venue'] for feedback in feedback_data if feedback['venue'] in ['popular', 'remote']]
+    successful_logistics = [feedback['logistics'] for feedback in feedback_data if feedback['logistics'] in ['excellent', 'good']]
+    successful_catering = [feedback['catering_food'] for feedback in feedback_data if feedback['catering_food'] in ['excellent', 'good', 'average']]
+    successful_technology = [feedback['technology_equipment'] for feedback in feedback_data if feedback['technology_equipment'] in ['excellent', 'inadequate']]
+    successful_sustainability = [feedback['sustainability'] for feedback in feedback_data if feedback['sustainability'] in ['sustainable']]
+    
+    success_criteria = {
+        'rating': len(successful_ratings) / total_feedback * 100,
+        'sponsorship_exhibitors': len(successful_sponsorship) / total_feedback * 100,
+        'experienced_footfall': len(successful_footfall) / total_feedback * 100,
+        'overall_satisfaction': len(successful_satisfaction) / total_feedback * 100,
+        'communication': len(successful_communication) / total_feedback * 100,
+        'organization': len(successful_organization) / total_feedback * 100,
+        'venue': len(successful_venue) / total_feedback * 100,
+        'logistics': len(successful_logistics) / total_feedback * 100,
+        'catering_food': len(successful_catering) / total_feedback * 100,
+        'technology_equipment': len(successful_technology) / total_feedback * 100
+    }
+
+    return success_criteria
+
+# @app.route("/trigger_analytics/<int:event_id>", methds=["GET","POST"])
+def trigger_analytics(event_id):
+    print(event_id)
+    query = "SELECT sponsor_id,organiser_id, rating, sponsorship_exhibitors, experienced_footfall, overall_satisfaction, communication, organization, venue, logistics, catering_food, technology_equipment, sustainability, comments FROM feedback WHERE event_id=%s"
+    cursor.execute(query, (event_id, ))
+    feedback_data = []
+    for row in cursor.fetchall():
+        feedback_dict = {
+            "rating": row[2],
+            "sponsorship_exhibitors": row[3], 
+            "experienced_footfall" : row[4],
+            "overall_satisfaction" : row[5],
+            "communication" : row[6],
+            "organization" : row[7],
+            "venue" :row[8],
+            "logistics" : row[9],
+            "catering_food" : row[10],
+            "technology_equipment" : row[11],
+            "sustainability": row[12],
+            "comments": row[13]
+        }
+        feedback_data.append(feedback_dict)
+    # print(feedback_data)
+    success_criteria = analyze_event_feedback(feedback_data)
+    print(success_criteria)
+    return success_criteria
+
+@app.route("/feedback/<int:receiver_id>", methods=["GET","POST"])
+def feedback(receiver_id):
+    if "user_id" in session:
+        user_id = session["user_id"]
+    query = "SELECT Role FROM User WHERE UserID = %s"
+    cursor.execute(query, (user_id, ))
+    Role = (cursor.fetchall())[0][0]
+
+    if(Role == "Sponsor"):
+        query = "SELECT PackageID FROM Interest WHERE SponsorID=%s AND OrganizerID=%s"
+    else:
+        query = "SELECT PackageID FROM Interest WHERE OrganizerID=%s AND SponsorID=%s"
+
+    cursor.execute(query, (user_id, receiver_id, ))
+
+    package_id = (cursor.fetchall())[0][0]
+    
+    query = "SELECT EventID FROM Package WHERE PackageID=%s"
+    cursor.execute(query, (package_id, ))
+    event_id = (cursor.fetchall())[0][0]
+
+    query = "SELECT Title FROM Event WHERE EventID=%s"
+    cursor.execute(query, (event_id, ))
+    title = (cursor.fetchall())[0][0]
+
+    return render_template('feedback.html', event_id=event_id, title=title, user_id=user_id, receiver_id=receiver_id)
+
+
+@app.route('/submit_feedback/<int:event_id>', methods=['POST'])
+def submit_feedback(event_id):
+    if request.method == 'POST':    
+        user_id = session["user_id"]
+        query = "SELECT OrganizerID FROM Event WHERE EventID=%s"
+        cursor.execute(query, (event_id,))
+        org_id = (cursor.fetchall())[0][0]
+
+        # query = "SELECT PackageID FROM Package WHERE EventID=%s"
+        # cursor.execute(query, (event_id, ))
+        # title = (cursor.fetchall())[0][0]
+
+        # Get form data
+
+        # event_name = request.form['title']
+        rating = int(request.form['rating'])
+        sponsorship_exhibitors = request.form['sponsorship_exhibitors']
+        experienced_footfall = request.form['experienced_footfall']
+        overall_satisfaction = request.form['overall_satisfaction']
+        communication = request.form['communication']
+        organization = request.form['organization']
+        venue = request.form['venue']
+        logistics = request.form['logistics']
+        catering_food = request.form['catering_food']
+        technology_equipment = request.form['technology_equipment']
+        sustainability = request.form['sustainability']
+        comments = request.form['comments']
+        # Insert feedback into the database
+        sql = "INSERT INTO feedback (sponsor_id,organiser_id, event_id, rating, sponsorship_exhibitors, experienced_footfall, overall_satisfaction, communication, organization, venue, logistics, catering_food, technology_equipment, sustainability, comments) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        val = (user_id, org_id,event_id, rating, sponsorship_exhibitors, experienced_footfall, overall_satisfaction, communication, organization, venue, logistics, catering_food, technology_equipment, sustainability, comments, )
+        cursor.execute(sql, val)
+        cnx.commit()
+        return redirect(url_for('home')) 
+
 
 @app.route("/reject_request", methods=["POST"])
 def reject_interest():

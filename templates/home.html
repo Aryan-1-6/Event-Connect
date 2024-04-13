@@ -14,10 +14,11 @@
                 <a class="btn btn-primary btn-lg" href="/create_event" role="button">Get Started</a>
             </div>
             <!-- Search form -->
-            <form method="post" class="form-inline my-2 my-lg-0 mb-4">
+            <!-- <form method="post" class="form-inline my-2 my-lg-0 mb-4">
                 <input class="form-control mr-sm-2" type="text" name="search_query" placeholder="Search" value="{{ search_query }}">
                 <button class="btn btn-primary" type="submit">Search</button>
-            </form>
+                <a class="btn btn-primary ml-3" href="/sponsors" role="button">Sponsors</a>
+            </form> -->
             
             <!-- Subtitle for Event Boxes -->
             <h2 class="display-4 mt-5 ml-2 mb-3" style="font-size: 50px;">Latest Events</h2>
@@ -62,6 +63,7 @@
                 <div class="card-header">
                     <h3 class="card-title">Sponsor Interests</h3>
                 </div>
+                
                 <div class="card-body">
                     <ul class="list-unstyled">
                         {% if interest_list.empty %}
@@ -80,6 +82,7 @@
                         {% endif %}
                     </ul>
                 </div>
+                
             </div>
         </div>
     </div>
@@ -218,7 +221,6 @@
         right: 10px;
         color: #f1f1f1;
     }
-
 </style>
 
 <footer class="footer text-center py-3">
@@ -232,8 +234,8 @@
     <div id="messagePopup" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeMessagePopup()">&times;</span>
-            <h2 style="font-family: 'Arial', sans-serif; font-size: 24px;">Messages</h2>
-            <div id="messageContent"></div>
+            <h2 class="popup-heading">Messages</h2>
+            <div id="messageContent" class="message-container"></div>
         </div>
     </div>
     <small>event-connect &copy; 2023</small>
@@ -245,6 +247,7 @@
         var chats = {{ message_list|tojson }}
         var popup = document.getElementById("messagePopup");
         popup.style.display = "block";
+        var contentContainer = document.getElementById('messageContent');
 
         chats.forEach(function(msg) {
             var messageElement = document.createElement('p');
@@ -255,10 +258,9 @@
                     <hr>
                 </div>
                 <div class="message-action">
-                    <a href="/chat_box/${msg.box_id}">View Message</a>
+                    <a href="/view_chat/${msg.box_id}">View Message</a>
                 </div>
             `;
-            // Prepend the new message to the top of the container
             contentContainer.prepend(messageElement);
         });
     }
