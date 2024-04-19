@@ -1,4 +1,3 @@
--- Create Organization Table
 USE se_project;
 CREATE TABLE Organization (
     OrganizationID INT AUTO_INCREMENT PRIMARY KEY,
@@ -17,24 +16,6 @@ CREATE TABLE User (
     OrganizationID INT,
     FOREIGN KEY (OrganizationID) REFERENCES Organization(OrganizationID)
 );
-
-
--- Create Post Table (Parent Entity for Issues and Projects)
--- CREATE TABLE Post (
---     PostID INT AUTO_INCREMENT PRIMARY KEY,
---     Title VARCHAR(255) NOT NULL,
---     Description TEXT,
---     CreatedAtDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     Status VARCHAR(20) DEFAULT 'in progress',
---     Topic ENUM('environment', 'social','governance') NOT NULL,
---     UserID INT,
---     Upvotes INT DEFAULT 0,
---     Downvotes INT DEFAULT 0,
---     OrganizationID INT DEFAULT NULL,
---     Type ENUM('issue', 'project') DEFAULT 'issue',
---     FOREIGN KEY (UserID) REFERENCES User(UserID) ON DELETE CASCADE,
---     FOREIGN KEY (OrganizationID) REFERENCES Organization(OrganizationID)
--- );
 
 CREATE TABLE Event (
     EventID INT AUTO_INCREMENT PRIMARY KEY,
@@ -90,52 +71,90 @@ CREATE TABLE Interest (
     accepted BOOLEAN
 );
 
-CREATE TABLE chat_messages (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE Interaction (
+	chatbox_id INT AUTO_INCREMENT PRIMARY KEY
+);
+
+CREATE TABLE Chatbox (
+    msg_id INT AUTO_INCREMENT PRIMARY KEY,
     package_id INT NOT NULL,
     sender_id INT NOT NULL,
     receiver_id INT NOT NULL,
     message TEXT NOT NULL,
     timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (package_id) REFERENCES sponsor_requests(id),
-    FOREIGN KEY (sender_id) REFERENCES users(id),
-    FOREIGN KEY (receiver_id) REFERENCES users(id)
+    FOREIGN KEY (package_id) REFERENCES Package(PackageID),
+    FOREIGN KEY (sender_id) REFERENCES User(UserID),
+    FOREIGN KEY (receiver_id) REFERENCES User(UserID)
 );
 
--- Create Comment Table
--- CREATE TABLE Comment (
---     CommentID INT AUTO_INCREMENT PRIMARY KEY,
---     Content TEXT,
---     CreatedAtDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     UserID INT,
---     PostID INT,
---     FOREIGN KEY (UserID) REFERENCES User(UserID) ON DELETE CASCADE,
---     FOREIGN KEY (PostID) REFERENCES Post(PostID) ON DELETE CASCADE
--- );
-
--- Create Sentiment Analysis Table
--- CREATE TABLE SentimentAnalysis (
---     CommentID INT PRIMARY KEY,
---     Sentiment VARCHAR(20),
---     Confidence FLOAT,
---     AnalysisDate TIMESTAMP,
---     FOREIGN KEY (CommentID) REFERENCES Comment(CommentID) ON DELETE CASCADE
--- );
-
--- Create UserVotes Table for tracking user votes on posts
--- CREATE TABLE UserVotes (
---     VoteID INT AUTO_INCREMENT PRIMARY KEY,
---     UserID INT,
---     PostID INT,
---     VoteType ENUM('upvote', 'downvote') NOT NULL,
---     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     UNIQUE (UserID, PostID),
---     FOREIGN KEY (UserID) REFERENCES User(UserID) ON DELETE CASCADE,
---     FOREIGN KEY (PostID) REFERENCES Post(PostID) ON DELETE CASCADE
--- );
+CREATE TABLE feedback (
+    feedback_id INT AUTO_INCREMENT PRIMARY KEY,
+    organiser_id INT NOT NULL,
+    sponsor_id INT NOT NULL,
+    event_id INT NOT NULL,
+    rating INT,
+    sponsorship_exhibitors VARCHAR(255),
+    experienced_footfall VARCHAR(255),
+    overall_satisfaction VARCHAR(255),
+    communication VARCHAR(255),
+    organization VARCHAR(255),
+    venue VARCHAR(255),
+    logistics VARCHAR(255),
+    catering_food VARCHAR(255),
+    technology_equipment VARCHAR(255),
+    sustainability VARCHAR(255),
+    comments TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (organiser_id) REFERENCES Interaction (organiser_id),
+    FOREIGN KEY (sponsor_id) REFERENCES Interaction (sponsor_id),
+    FOREIGN KEY (event_id) REFERENCES Event (EventID)
+);
 
 ALTER TABLE user
 ADD COLUMN profile_pic LONGBLOB;
+
+alter table Package
+add column Price_limit DECIMAL(10,2) NOT NULL;
+
+alter table Package
+drop column Details;
+alter table Package
+add column Description text;
+alter table Package
+add column EventID int;
+alter table interaction
+add constraint foreign key (EventID) references Event(EventID) on delete cascade;
+
+
+alter table Chatbox
+drop column package_id;
+alter table Chatbox
+add column box_id int;
+alter table Chatbox
+add constraint foreign key (box_id) references Interaction(chatbox_id) on delete cascade;
+
+alter table interest
+add column PackageID int not null;
+alter table interest
+add constraint foreign key (PackageID) references Package(PackageID) on delete cascade;
+
+alter table interaction
+add column sponsor_id int;
+
+alter table interaction
+add constraint foreign key (sponsor_id) references User(UserID) on delete cascade;
+
+alter table interaction
+add column organiser_id int;
+
+alter table interaction
+add constraint foreign key (organiser_id) references Package(OrganiserID) on delete cascade;
+
+alter table interaction
+add column package_id int;
+
+alter table interaction
+add constraint foreign key (package_id) references Package(PackageID) on delete cascade;
 
 ALTER TABLE Organization
 ADD COLUMN logo LONGBLOB;
