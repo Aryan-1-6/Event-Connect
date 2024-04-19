@@ -73,6 +73,7 @@ def create_new_user(form_data):
     password = form_data.get("password")
     role = form_data.get("role")  # Assuming "role" is the name of the checkbox
     organization = form_data.get("organization")
+    # images = form.data.get("profileImage")
 
     # Extract the user's name from the email
     name = email.split("@")[0]
@@ -1043,7 +1044,15 @@ def apply_filters():
     response_list = get_responses(user_id)
     posts_df = pd.DataFrame(fetch_filtered_posts(location, eventType, eventTopic,attendeesTo, attendeesFrom, budgetFrom, budgetTo))
 
-    return render_template('sponsor_home.html', posts_df=posts_df, response_list = get_responses(user_id))
+    query = "SELECT Role FROM User WHERE UserID = %s"
+    cursor.execute(query, (user_id , ))
+    role = (cursor.fetchall())[0][0]
+    if(role == "Sponsor"):
+        message_list = chat_list(user_id, 1)
+    else:    
+        message_list = chat_list(user_id, 0)
+
+    return render_template('sponsor_home.html', posts_df=posts_df, response_list = get_responses(user_id), message_list = message_list)
 
 def get_organizer_info(package_id):
     # Your logic to fetch the organizer's information based on the package ID goes here
@@ -1051,10 +1060,11 @@ def get_organizer_info(package_id):
     # Assuming you have a Packages table with an organizer_id column that references the Users table
     query = "SELECT Package.OrganizerID FROM Package WHERE Package.PackageId = %s"
     print(package_id," ccmmc")
-    package_id = tuple(package_id)
-    cursor.execute(query, (package_id))
+    # package_id = tuple(package_id)
+    cursor.execute(query, (package_id, ))
     post_data = cursor.fetchall()
     if post_data != []:
+        print("ge")
         return post_data[0]
     else:
         return None
